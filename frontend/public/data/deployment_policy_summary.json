@@ -1,0 +1,14 @@
+{
+  "standard_budget_policy": "ParkPulse operational priority",
+  "standard_budget_best_recovery_policy": "Recovery per resource-hour",
+  "standard_budget_recovery_minutes": 845.4,
+  "standard_budget_capacity_loss_minutes": 1183.2,
+  "standard_budget_high_spillback_zones": 4,
+  "standard_budget_immediate_clearance_zones": 4,
+  "standard_budget_recovery_per_resource_hour": 51.2,
+  "standard_budget_mean_evidence_quality": 96.2,
+  "parkpulse_vs_tori_recovery_uplift_pct": 9.1,
+  "parkpulse_vs_density_recovery_uplift_pct": 40.0,
+  "parkpulse_vs_tori_spillback_uplift_pct": 100.0,
+  "policy_lab_note": "Policy simulation compares dispatch rules under patrol/tow budgets using transparent operational proxies. It is a planning back-test, not measured live traffic delay."
+}

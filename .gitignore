@@ -1,0 +1,40 @@
+# macOS / editor noise
+.DS_Store
+._*
+*.swp
+*.swo
+
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+.deps/
+.env
+.env.local
+
+# Raw/local data. Keep data/README.md committed, but do not publish police data
+# unless the hackathon rules explicitly allow it in a private judged repo.
+data/*
+!data/README.md
+Datasets/
+*.sqlite
+*.db
+
+# Pipeline outputs are reproducible from run_pipeline.py.
+# The lightweight React demo data lives under frontend/public/data and is kept.
+outputs/
+
+# Frontend local installs/builds
+frontend/node_modules/
+frontend/dist/
+frontend/tsconfig.tsbuildinfo
+
+# Report build byproducts / local reference material
+reports/__pycache__/
+reports/~$*.pptx
+reports/Baibhav_Mohanty_Flipkart_Hilabs_Shortlisted__1743524410.pdf
