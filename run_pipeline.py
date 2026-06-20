@@ -32,7 +32,7 @@ from src.impact_metrics import (  # noqa: E402
 from src.map_outputs import generate_maps  # noqa: E402
 from src.policy_simulation import export_policy_simulation, simulate_deployment_policies  # noqa: E402
 from src.plots import generate_basic_plots  # noqa: E402
-from src.recommendations import build_enforcement_plan  # noqa: E402
+from src.recommendations import build_enforcement_plan, write_operational_intelligence_summary  # noqa: E402
 from src.roadspace_intelligence import (  # noqa: E402
     build_roadspace_intelligence,
     export_roadspace_intelligence,
@@ -89,6 +89,7 @@ def main() -> None:
     plan.groupby("station").head(5).to_csv(
         config.TABLES_DIR / "station_deployment_plan.csv", index=False
     )
+    write_operational_intelligence_summary(tori, plan)
 
     print("[7/16] Building road-space, lane-obstruction and corridor intelligence...")
     roadspace = build_roadspace_intelligence(clean_df, tori, plan, top_n=500)

@@ -74,6 +74,10 @@ export interface Metrics {
   parkpulse_vs_tori_recovery_uplift_pct?: number | null;
   parkpulse_vs_density_recovery_uplift_pct?: number | null;
   policy_lab_note?: string | null;
+  emerging_priority_zones?: number | null;
+  hidden_hotspot_candidates?: number | null;
+  low_reliability_priority_zones?: number | null;
+  critical_station_load_count?: number | null;
 }
 
 export interface EnforcementPlanRow {
@@ -87,6 +91,23 @@ export interface EnforcementPlanRow {
   final_priority_score: number;
   stable_pcis: number;
   emerging_score: number;
+  confidence_adjusted_priority_0_100?: number;
+  emerging_hotspot_score_0_100?: number;
+  hidden_hotspot_score_0_100?: number;
+  hidden_hotspot_flag?: string;
+  recent_violation_rate?: number;
+  prior_violation_rate?: number;
+  recent_to_prior_pressure_ratio?: number;
+  hotspot_persistence_class?: string;
+  time_window_reliability_score_0_100?: number;
+  time_window_reliability_band?: string;
+  time_window_coverage_warning?: string;
+  station_recording_bias_score_0_100?: number;
+  station_recording_bias_band?: string;
+  repeat_vehicle_movement_score_0_100?: number;
+  repeat_vehicle_movement_pattern?: string;
+  violation_text_severity_score_0_100?: number;
+  violation_text_severity_signature?: string;
   confidence_band: ConfidenceBand;
   recommended_action: ActionType;
   reasoning: string;
@@ -100,6 +121,12 @@ export interface EnforcementPlanRow {
   estimated_patrol_hours: number;
   estimated_tow_hours: number;
   enforcement_roi: number;
+  station_priority_zone_count?: number;
+  station_high_priority_zone_count?: number;
+  station_patrol_hours_total?: number;
+  station_tow_hours_total?: number;
+  station_enforcement_load_score_0_100?: number;
+  station_load_band?: string;
   estimated_capacity_loss_minutes?: number;
   capacity_loss_pressure_0_100?: number;
   queue_spillback_risk_0_100?: number;
@@ -134,6 +161,19 @@ export interface HotspotFeature {
     final_priority_score: number;
     stable_pcis: number;
     emerging_score: number;
+    confidence_adjusted_priority_0_100?: number | null;
+    emerging_hotspot_score_0_100?: number | null;
+    hidden_hotspot_score_0_100?: number | null;
+    hidden_hotspot_flag?: string | null;
+    hotspot_persistence_class?: string | null;
+    time_window_reliability_score_0_100?: number | null;
+    time_window_reliability_band?: string | null;
+    station_recording_bias_score_0_100?: number | null;
+    station_recording_bias_band?: string | null;
+    repeat_vehicle_movement_score_0_100?: number | null;
+    repeat_vehicle_movement_pattern?: string | null;
+    violation_text_severity_score_0_100?: number | null;
+    violation_text_severity_signature?: string | null;
     recommended_action: ActionType;
     confidence_band: ConfidenceBand;
     best_time_window: string;
@@ -156,7 +196,7 @@ export interface HotspotsGeoJson {
 export interface ReasonCode {
   reason: string;
   evidence: string;
-  support_level: 'observed' | 'observed-low-volume' | 'proxy' | 'external-feed-required' | string;
+  support_level: 'observed' | 'observed-low-volume' | 'modelled' | 'modelled-estimate' | 'external-feed-required' | string;
 }
 
 export interface MitigationStep {
@@ -187,6 +227,21 @@ export interface LaneHotspotFeature {
     chronic_vehicle_pressure_0_100?: number | null;
     patrol_gap_score_0_100?: number | null;
     patrol_gap_band?: string | null;
+    confidence_adjusted_priority_0_100?: number | null;
+    emerging_hotspot_score_0_100?: number | null;
+    hidden_hotspot_score_0_100?: number | null;
+    hidden_hotspot_flag?: string | null;
+    hotspot_persistence_class?: string | null;
+    time_window_reliability_score_0_100?: number | null;
+    time_window_reliability_band?: string | null;
+    station_recording_bias_score_0_100?: number | null;
+    station_recording_bias_band?: string | null;
+    repeat_vehicle_movement_score_0_100?: number | null;
+    repeat_vehicle_movement_pattern?: string | null;
+    violation_text_severity_score_0_100?: number | null;
+    violation_text_severity_signature?: string | null;
+    station_enforcement_load_score_0_100?: number | null;
+    station_load_band?: string | null;
     mitigation_plan: MitigationStep[];
     reason_codes: ReasonCode[];
     officer_brief: string;
@@ -276,6 +331,25 @@ export interface RoadspaceHotspot {
   chronic_vehicle_pressure_0_100?: number | null;
   patrol_gap_score_0_100?: number | null;
   patrol_gap_band?: string | null;
+  confidence_adjusted_priority_0_100?: number | null;
+  emerging_hotspot_score_0_100?: number | null;
+  hidden_hotspot_score_0_100?: number | null;
+  hidden_hotspot_flag?: string | null;
+  recent_violation_rate?: number | null;
+  prior_violation_rate?: number | null;
+  recent_to_prior_pressure_ratio?: number | null;
+  hotspot_persistence_class?: string | null;
+  time_window_reliability_score_0_100?: number | null;
+  time_window_reliability_band?: string | null;
+  time_window_coverage_warning?: string | null;
+  station_recording_bias_score_0_100?: number | null;
+  station_recording_bias_band?: string | null;
+  repeat_vehicle_movement_score_0_100?: number | null;
+  repeat_vehicle_movement_pattern?: string | null;
+  violation_text_severity_score_0_100?: number | null;
+  violation_text_severity_signature?: string | null;
+  station_enforcement_load_score_0_100?: number | null;
+  station_load_band?: string | null;
   historical_workforce_proxy: string;
   signal_health_status: string;
   live_workforce_status: string;
@@ -304,6 +378,14 @@ export interface StationSummary {
   recovery_minutes_per_resource_hour?: number;
   avg_repeat_pressure?: number;
   avg_patrol_gap?: number;
+  avg_emerging_pressure?: number;
+  avg_hidden_hotspot_score?: number;
+  avg_time_window_reliability?: number;
+  avg_confidence_adjusted_priority?: number;
+  station_priority_zone_count?: number;
+  station_high_priority_zone_count?: number;
+  station_enforcement_load_score_0_100?: number;
+  station_load_band?: string;
 }
 
 export interface ForecastSummary {

@@ -373,7 +373,7 @@ def generate_congestion_overlay_map(segments: pd.DataFrame, output_path: Path) -
       <span style="color:#2874F0;font-weight:800;">━</span> Blue: low obstruction risk<br/>
       <span style="color:#F4C430;font-weight:800;">━</span> Yellow: moderate obstruction risk<br/>
       <span style="color:#D93025;font-weight:800;">━</span> Red: severe obstruction risk<br/>
-      <small>Proxy from illegal-parking hotspot data, not live speed.</small>
+      <small>Modelled estimate from illegal-parking hotspot data, not live speed.</small>
     </div>
     """
     fmap.get_root().html.add_child(folium.Element(legend_html))
@@ -426,7 +426,7 @@ def generate_congestion_overlay_png(segments: pd.DataFrame, output_path: Path) -
     ax.text(
         0.01,
         0.98,
-        "Generated from illegal-parking hotspot coordinates and lane-obstruction proxy. Not live speed data.",
+        "Generated from illegal-parking hotspot coordinates and lane-obstruction estimate. Not live speed data.",
         transform=ax.transAxes,
         va="top",
         ha="left",

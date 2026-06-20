@@ -77,7 +77,7 @@ export const mockEnforcementPlan: EnforcementPlanRow[] = [
     enforcement_roi: 10.4,
     estimated_lane_recovery_minutes: 68,
     recovery_minutes_per_resource_hour: 34,
-    impact_confidence_note: 'Useful but moderate-confidence recovery proxy',
+    impact_confidence_note: 'Useful but moderate-confidence recovery estimate',
     centroid_lat: 12.974,
     centroid_lon: 77.535
   },
@@ -308,7 +308,7 @@ export const mockMetrics: Metrics = {
   standard_budget_mean_evidence_quality: 91,
   parkpulse_vs_tori_recovery_uplift_pct: 8.4,
   parkpulse_vs_density_recovery_uplift_pct: 13.2,
-  policy_lab_note: 'Policy simulation compares dispatch rules under patrol/tow budgets using transparent operational proxies.'
+  policy_lab_note: 'Policy simulation compares dispatch rules under patrol/tow budgets using transparent operational estimates.'
 };
 
 export const mockStations: StationSummary[] = [

@@ -68,7 +68,7 @@
         "lane_context": "Local carriageway edge",
         "dominant_issue": "Recurring kerbside illegal-parking pressure",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -103,7 +103,7 @@
         "lane_context": "Market/commercial access lane",
         "dominant_issue": "Recurring kerbside illegal-parking pressure",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Metro/market spillover control"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -173,7 +173,7 @@
         "lane_context": "Local carriageway edge",
         "dominant_issue": "Large-vehicle road-space footprint amplifying congestion",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -208,7 +208,7 @@
         "lane_context": "Local carriageway edge",
         "dominant_issue": "Recurring kerbside illegal-parking pressure",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -313,7 +313,7 @@
         "lane_context": "Local carriageway edge",
         "dominant_issue": "Recurring kerbside illegal-parking pressure",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -383,7 +383,7 @@
         "lane_context": "Metro feeder access lane",
         "dominant_issue": "Recurring kerbside illegal-parking pressure",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Metro/market spillover control"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -418,7 +418,7 @@
         "lane_context": "Main-road kerb lane",
         "dominant_issue": "Main-road illegal parking likely occupying the kerb-side running lane",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Engineering fix + targeted patrol"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -523,7 +523,7 @@
         "lane_context": "Local carriageway edge",
         "dominant_issue": "Recurring kerbside illegal-parking pressure",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -593,7 +593,7 @@
         "lane_context": "Metro feeder access lane",
         "dominant_issue": "Recurring kerbside illegal-parking pressure",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Metro/market spillover control"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -628,7 +628,7 @@
         "lane_context": "Local carriageway edge",
         "dominant_issue": "Large-vehicle road-space footprint amplifying congestion",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -733,7 +733,7 @@
         "lane_context": "Local carriageway edge",
         "dominant_issue": "Large-vehicle road-space footprint amplifying congestion",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -838,7 +838,7 @@
         "lane_context": "Main-road kerb lane",
         "dominant_issue": "Main-road illegal parking likely occupying the kerb-side running lane",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -873,7 +873,7 @@
         "lane_context": "Main-road kerb lane",
         "dominant_issue": "Main-road illegal parking likely occupying the kerb-side running lane",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -1048,7 +1048,7 @@
         "lane_context": "Metro feeder access lane",
         "dominant_issue": "Recurring kerbside illegal-parking pressure",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Targeted patrol"
+        "recommended_action": "Metro/market spillover control"
       }
     },
     {
@@ -1223,7 +1223,7 @@
         "lane_context": "Local carriageway edge",
         "dominant_issue": "Recurring kerbside illegal-parking pressure",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -1573,7 +1573,7 @@
         "lane_context": "Main-road kerb lane",
         "dominant_issue": "Main-road illegal parking likely occupying the kerb-side running lane",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Engineering fix + targeted patrol"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -1923,7 +1923,7 @@
         "lane_context": "Local carriageway edge",
         "dominant_issue": "Large-vehicle road-space footprint amplifying congestion",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -2098,7 +2098,7 @@
         "lane_context": "Main-road kerb lane",
         "dominant_issue": "Main-road illegal parking likely occupying the kerb-side running lane",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -2133,7 +2133,7 @@
         "lane_context": "Local carriageway edge",
         "dominant_issue": "Large-vehicle road-space footprint amplifying congestion",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -2168,7 +2168,7 @@
         "lane_context": "Local carriageway edge",
         "dominant_issue": "Recurring kerbside illegal-parking pressure",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -2238,7 +2238,7 @@
         "lane_context": "Local carriageway edge",
         "dominant_issue": "Large-vehicle road-space footprint amplifying congestion",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -2308,7 +2308,7 @@
         "lane_context": "Main-road kerb lane",
         "dominant_issue": "Main-road illegal parking likely occupying the kerb-side running lane",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Engineering fix + targeted patrol"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -2343,7 +2343,7 @@
         "lane_context": "Main-road kerb lane",
         "dominant_issue": "Main-road illegal parking likely occupying the kerb-side running lane",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Engineering fix + targeted patrol"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -2448,7 +2448,7 @@
         "lane_context": "Main-road kerb lane",
         "dominant_issue": "Main-road illegal parking likely occupying the kerb-side running lane",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Targeted patrol"
+        "recommended_action": "Fixed-window enforcement"
       }
     },
     {
@@ -2693,7 +2693,7 @@
         "lane_context": "Main-road kerb lane",
         "dominant_issue": "Large-vehicle road-space footprint amplifying congestion",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -2938,7 +2938,7 @@
         "lane_context": "Local carriageway edge",
         "dominant_issue": "Recurring kerbside illegal-parking pressure",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -3288,7 +3288,7 @@
         "lane_context": "Main-road kerb lane",
         "dominant_issue": "Main-road illegal parking likely occupying the kerb-side running lane",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Engineering fix + targeted patrol"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -3358,7 +3358,7 @@
         "lane_context": "Local carriageway edge",
         "dominant_issue": "Large-vehicle road-space footprint amplifying congestion",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -3568,7 +3568,7 @@
         "lane_context": "Local carriageway edge",
         "dominant_issue": "Recurring kerbside illegal-parking pressure",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Targeted patrol"
+        "recommended_action": "Fixed-window enforcement"
       }
     },
     {
@@ -3708,7 +3708,7 @@
         "lane_context": "Main-road kerb lane",
         "dominant_issue": "Main-road illegal parking likely occupying the kerb-side running lane",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -3743,7 +3743,7 @@
         "lane_context": "Main-road kerb lane",
         "dominant_issue": "Main-road illegal parking likely occupying the kerb-side running lane",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Tow + fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -3813,7 +3813,7 @@
         "lane_context": "Local carriageway edge",
         "dominant_issue": "Large-vehicle road-space footprint amplifying congestion",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -4513,7 +4513,7 @@
         "lane_context": "Main-road kerb lane",
         "dominant_issue": "Main-road illegal parking likely occupying the kerb-side running lane",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -4793,7 +4793,7 @@
         "lane_context": "Main-road kerb lane",
         "dominant_issue": "Main-road illegal parking likely occupying the kerb-side running lane",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Engineering fix + targeted patrol"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -5178,7 +5178,7 @@
         "lane_context": "Local carriageway edge",
         "dominant_issue": "Recurring kerbside illegal-parking pressure",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -5283,7 +5283,7 @@
         "lane_context": "Local carriageway edge",
         "dominant_issue": "Recurring kerbside illegal-parking pressure",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -5423,7 +5423,7 @@
         "lane_context": "Local carriageway edge",
         "dominant_issue": "Large-vehicle road-space footprint amplifying congestion",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -5493,7 +5493,7 @@
         "lane_context": "Main-road kerb lane",
         "dominant_issue": "Main-road illegal parking likely occupying the kerb-side running lane",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -5773,7 +5773,7 @@
         "lane_context": "Main-road kerb lane",
         "dominant_issue": "Main-road illegal parking likely occupying the kerb-side running lane",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -5808,7 +5808,7 @@
         "lane_context": "Main-road kerb lane",
         "dominant_issue": "Main-road illegal parking likely occupying the kerb-side running lane",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Engineering fix + targeted patrol"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -5843,7 +5843,7 @@
         "lane_context": "Metro feeder access lane",
         "dominant_issue": "Recurring kerbside illegal-parking pressure",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Metro/market spillover control"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -5913,7 +5913,7 @@
         "lane_context": "Main-road kerb lane",
         "dominant_issue": "Main-road illegal parking likely occupying the kerb-side running lane",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Tow + fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -5948,7 +5948,7 @@
         "lane_context": "Junction approach",
         "dominant_issue": "Junction-mouth or road-crossing obstruction",
         "bottleneck_class": "Junction-mouth blocker",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -7033,7 +7033,7 @@
         "lane_context": "Local carriageway edge",
         "dominant_issue": "Recurring kerbside illegal-parking pressure",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Targeted patrol"
+        "recommended_action": "Fixed-window enforcement"
       }
     },
     {
@@ -7663,7 +7663,7 @@
         "lane_context": "Local carriageway edge",
         "dominant_issue": "Large-vehicle road-space footprint amplifying congestion",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -7733,7 +7733,7 @@
         "lane_context": "Local carriageway edge",
         "dominant_issue": "Recurring kerbside illegal-parking pressure",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -8503,7 +8503,7 @@
         "lane_context": "Main-road kerb lane",
         "dominant_issue": "Main-road illegal parking likely occupying the kerb-side running lane",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Targeted patrol"
+        "recommended_action": "Fixed-window enforcement"
       }
     },
     {
@@ -9378,7 +9378,7 @@
         "lane_context": "Main-road kerb lane",
         "dominant_issue": "Main-road illegal parking likely occupying the kerb-side running lane",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Engineering fix + targeted patrol"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -9763,7 +9763,7 @@
         "lane_context": "Local carriageway edge",
         "dominant_issue": "Large-vehicle road-space footprint amplifying congestion",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -10638,7 +10638,7 @@
         "lane_context": "Main-road kerb lane",
         "dominant_issue": "Main-road illegal parking likely occupying the kerb-side running lane",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Engineering fix + targeted patrol"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -11618,7 +11618,7 @@
         "lane_context": "Main-road kerb lane",
         "dominant_issue": "Double-parking likely narrowing an active running lane",
         "bottleneck_class": "Double-park lane squeeze",
-        "recommended_action": "Engineering fix + targeted patrol"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -12142,8 +12142,8 @@
         "top_time_window": "00:00–06:00 Night",
         "lane_context": "Market/commercial access lane",
         "dominant_issue": "Large-vehicle road-space footprint amplifying congestion",
-        "bottleneck_class": "Metro feeder spillover",
-        "recommended_action": "Metro/market spillover control"
+        "bottleneck_class": "Market/commercial spillover",
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -12913,7 +12913,7 @@
         "lane_context": "Local carriageway edge",
         "dominant_issue": "Large-vehicle road-space footprint amplifying congestion",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Targeted patrol"
+        "recommended_action": "Tow + fixed-window enforcement"
       }
     },
     {
@@ -13683,7 +13683,7 @@
         "lane_context": "Local carriageway edge",
         "dominant_issue": "Recurring kerbside illegal-parking pressure",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -14243,7 +14243,7 @@
         "lane_context": "Main-road kerb lane",
         "dominant_issue": "Recurring kerbside illegal-parking pressure",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Metro/market spillover control"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -19318,7 +19318,7 @@
         "lane_context": "Local carriageway edge",
         "dominant_issue": "Large-vehicle road-space footprint amplifying congestion",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Tow + fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -20123,7 +20123,7 @@
         "lane_context": "Metro feeder access lane",
         "dominant_issue": "Recurring kerbside illegal-parking pressure",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Targeted patrol"
+        "recommended_action": "Metro/market spillover control"
       }
     },
     {
@@ -21978,7 +21978,7 @@
         "lane_context": "Local carriageway edge",
         "dominant_issue": "Recurring kerbside illegal-parking pressure",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Targeted patrol"
+        "recommended_action": "Fixed-window enforcement"
       }
     },
     {
@@ -22818,7 +22818,7 @@
         "lane_context": "Main-road kerb lane",
         "dominant_issue": "Double-parking likely narrowing an active running lane",
         "bottleneck_class": "Double-park lane squeeze",
-        "recommended_action": "Tow + fixed-window enforcement"
+        "recommended_action": "Targeted patrol"
       }
     },
     {
@@ -26353,7 +26353,7 @@
         "lane_context": "Local carriageway edge",
         "dominant_issue": "Large-vehicle road-space footprint amplifying congestion",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Targeted patrol"
+        "recommended_action": "Tow + fixed-window enforcement"
       }
     },
     {
@@ -34018,7 +34018,7 @@
         "lane_context": "Local carriageway edge",
         "dominant_issue": "Large-vehicle road-space footprint amplifying congestion",
         "bottleneck_class": "Arterial kerb-lane choke",
-        "recommended_action": "Targeted patrol"
+        "recommended_action": "Fixed-window enforcement"
       }
     },
     {
@@ -34508,7 +34508,7 @@
         "lane_context": "Main-road kerb lane",
         "dominant_issue": "Double-parking likely narrowing an active running lane",
         "bottleneck_class": "Double-park lane squeeze",
-        "recommended_action": "Targeted patrol"
+        "recommended_action": "Fixed-window enforcement"
       }
     },
     {

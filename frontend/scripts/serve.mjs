@@ -54,7 +54,9 @@ const server = http.createServer((request, response) => {
   const extension = path.extname(filePath).toLowerCase();
   response.writeHead(200, {
     'Content-Type': mimeTypes[extension] ?? 'application/octet-stream',
-    'Cache-Control': extension === '.html' ? 'no-store' : 'public, max-age=3600'
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    Pragma: 'no-cache',
+    Expires: '0'
   });
   fs.createReadStream(filePath).pipe(response);
 });

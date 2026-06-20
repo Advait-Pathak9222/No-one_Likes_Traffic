@@ -45,6 +45,7 @@ import { actionTone, compactNumber, oneDecimal, percentage } from './utils/forma
 type Page =
   | 'Command Center'
   | 'Live Ops Brief'
+  | 'Intelligence Report'
   | 'Priority Queue'
   | 'Hotspot Intelligence'
   | "Tomorrow's Risk"
@@ -55,6 +56,7 @@ type Page =
 const pages: Array<{ name: Page; icon: React.ElementType }> = [
   { name: 'Command Center', icon: ShieldCheck },
   { name: 'Live Ops Brief', icon: Zap },
+  { name: 'Intelligence Report', icon: BarChart3 },
   { name: 'Hotspot Intelligence', icon: MapPinned },
   { name: 'Deployment Simulator', icon: SlidersHorizontal },
   { name: 'Methodology', icon: Info }
@@ -108,7 +110,7 @@ function mapProps(feature: MapFeature) {
 }
 
 const ALL_PAGES: Page[] = [
-  'Command Center', 'Live Ops Brief', 'Priority Queue', 'Hotspot Intelligence',
+  'Command Center', 'Live Ops Brief', 'Intelligence Report', 'Priority Queue', 'Hotspot Intelligence',
   "Tomorrow's Risk", 'Deployment Simulator', 'Station View', 'Methodology'
 ];
 
@@ -147,6 +149,7 @@ function App() {
           <CommandCenter data={data} selectedPlan={selectedPlan} onSelect={openHotspotIntelligence} />
         )}
         {page === 'Live Ops Brief' && <LiveOpsBrief data={data} onSelect={openHotspotIntelligence} />}
+        {page === 'Intelligence Report' && <OperationalIntelligenceReport data={data} onSelect={openHotspotIntelligence} />}
         {page === 'Priority Queue' && <PriorityQueue data={data} onSelect={openHotspotIntelligence} />}
         {page === 'Hotspot Intelligence' && (
           <HotspotIntelligence data={data} selectedPlan={selectedPlan} onSelect={openHotspotIntelligence} />
@@ -217,7 +220,7 @@ function Sidebar({
       <div className="sidebar-note">
         <Info size={16} />
         <span>
-          ParkPulse separates recurrence prediction from operational impact; all traffic-flow outputs are transparent proxies, not measured speed.
+          ParkPulse separates recurrence prediction from operational impact; all traffic-flow outputs are modelled estimates, not measured speed.
         </span>
       </div>
       {usingMockData && <div className="sidebar-warning">Using mock fallback data</div>}
@@ -253,13 +256,13 @@ function CommandCenter({
         <KpiCard label="Recurrence Capture@20" value={percentage(data.metrics.headline_recurrence_capture_at_20)} sub={recurrenceSub} icon={BarChart3} accent
           hint="Best validated recurrence signal at top-20. This predicts where obstruction pressure is likely to recur; TORI is used after that to explain severity and action." />
         <KpiCard label="Top-20 Lane Recovery" value={`${compactNumber(data.metrics.top20_lane_recovery_minutes)} min`} sub={recoverySub} icon={Navigation}
-          hint="ELRM: estimated running-lane minutes recovered if the top-20 zones are actioned in their target windows (low–high range from enforcement effectiveness). A proxy, not measured travel-time." />
+          hint="ELRM: estimated running-lane minutes recovered if the top-20 zones are actioned in their target windows (low–high range from enforcement effectiveness). A modelled estimate, not measured travel-time." />
         <KpiCard label="High Spillback Zones" value={compactNumber(data.metrics.high_spillback_risk_zones)} icon={AlertTriangle}
           hint="Recommended zones whose inferred queue-spillback risk is high enough to threaten nearby junction flow." />
         <KpiCard label="Chronic Repeat Zones" value={compactNumber(data.metrics.chronic_repeat_priority_zones)} icon={Car}
           hint="Priority zones where anonymized vehicle ids recur strongly enough to indicate chronic parking pressure." />
-        <KpiCard label="Patrol-Gap Zones" value={compactNumber(data.metrics.patrol_gap_priority_zones)} icon={ShieldCheck}
-          hint="High-risk zones with comparatively low historical enforcement coverage; these need fixed-window coverage." />
+        <KpiCard label="Emerging / Hidden" value={`${compactNumber(data.metrics.emerging_priority_zones)}/${compactNumber(data.metrics.hidden_hotspot_candidates)}`} icon={ShieldCheck}
+          hint="Emerging zones show recent pressure growth; hidden candidates remain risky after correcting for station recording exposure." />
         <KpiCard label="Median Clearance SLA" value={`${compactNumber(data.metrics.median_clearance_sla_minutes)} min`} icon={Zap}
           hint="Median response deadline assigned by spillback, capacity-loss, repeat pressure, and patrol-gap urgency." />
       </div>
@@ -282,8 +285,8 @@ function CommandCenter({
       <div className="summary-strip">
         <SummaryItem label="Busiest station" value={topStation?.police_station ?? '—'} />
         <SummaryItem label="Its peak window" value={topStation?.peak_time_window ?? '—'} />
-        <SummaryItem label="Immediate clearance zones" value={compactNumber(data.metrics.immediate_clearance_zones)} />
-        <SummaryItem label="Median clearance SLA" value={`${compactNumber(data.metrics.median_clearance_sla_minutes)} min`} />
+        <SummaryItem label="Patrol-gap zones" value={compactNumber(data.metrics.patrol_gap_priority_zones)} />
+        <SummaryItem label="Low-reliability windows" value={compactNumber(data.metrics.low_reliability_priority_zones)} />
       </div>
     </section>
   );
@@ -587,7 +590,8 @@ function TopPriorityPanel({ rows, onSelect }: { rows: EnforcementPlanRow[]; onSe
             <span className="zone">
               <strong>{row.zone_name}</strong>
               <small>{row.police_station} · {row.best_time_window}</small>
-              <small>Repeat {oneDecimal(row.repeat_pressure_score_0_100)} · Gap {oneDecimal(row.patrol_gap_score_0_100)}</small>
+              <small>{row.hotspot_persistence_class ?? 'Recurring watchlist'} · {row.time_window_reliability_band ?? 'Evidence pending'}</small>
+              <small>Emerging {oneDecimal(row.emerging_hotspot_score_0_100)} · Hidden {oneDecimal(row.hidden_hotspot_score_0_100)}</small>
             </span>
             <ActionChip action={row.recommended_action} />
             <strong className="score">{oneDecimal(row.operational_priority_score_0_100 ?? row.final_priority_score)}</strong>
@@ -783,6 +787,381 @@ function TriggerCard({
   );
 }
 
+type IntelligenceMetric = {
+  title: string;
+  primary: string;
+  primaryLabel: string;
+  score: string;
+  scoreLabel: string;
+  role: string;
+  action: string;
+  chart: ChartPoint[];
+  examples: EnforcementPlanRow[];
+  icon: React.ElementType;
+  tone: 'blue' | 'orange' | 'green' | 'purple' | 'slate';
+};
+
+function numericField(row: EnforcementPlanRow, key: keyof EnforcementPlanRow): number {
+  const value = row[key];
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
+
+function meanField(rows: EnforcementPlanRow[], key: keyof EnforcementPlanRow): number {
+  if (rows.length === 0) return 0;
+  return rows.reduce((sum, row) => sum + numericField(row, key), 0) / rows.length;
+}
+
+function countWhere(rows: EnforcementPlanRow[], predicate: (row: EnforcementPlanRow) => boolean): number {
+  return rows.reduce((count, row) => count + (predicate(row) ? 1 : 0), 0);
+}
+
+function topRows(rows: EnforcementPlanRow[], key: keyof EnforcementPlanRow, limit = 3): EnforcementPlanRow[] {
+  return [...rows].sort((a, b) => numericField(b, key) - numericField(a, key)).slice(0, limit);
+}
+
+function countDistribution(rows: EnforcementPlanRow[], accessor: (row: EnforcementPlanRow) => string | null | undefined, limit = 5): ChartPoint[] {
+  const counts = new globalThis.Map<string, number>();
+  rows.forEach((row) => {
+    const label = accessor(row)?.trim() || 'Not labelled';
+    counts.set(label, (counts.get(label) ?? 0) + 1);
+  });
+  return Array.from(counts.entries())
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, limit);
+}
+
+function scoreBandDistribution(rows: EnforcementPlanRow[], key: keyof EnforcementPlanRow): ChartPoint[] {
+  const bands = [
+    { name: '0-40', min: 0, max: 40 },
+    { name: '40-60', min: 40, max: 60 },
+    { name: '60-80', min: 60, max: 80 },
+    { name: '80-90', min: 80, max: 90 },
+    { name: '90-100', min: 90, max: 101 }
+  ];
+  return bands.map((band) => ({
+    name: band.name,
+    value: rows.filter((row) => {
+      const score = numericField(row, key);
+      return score >= band.min && score < band.max;
+    }).length
+  }));
+}
+
+function percentText(count: number, total: number): string {
+  if (!total) return '—';
+  return `${oneDecimal((count / total) * 100)}%`;
+}
+
+function OperationalIntelligenceReport({
+  data,
+  onSelect
+}: {
+  data: ParkPulseData;
+  onSelect: (zoneId: string) => void;
+}) {
+  const stations = useMemo(
+    () => ['All', ...Array.from(new Set(data.enforcementPlan.map((row) => row.police_station))).sort()],
+    [data.enforcementPlan]
+  );
+  const timeWindows = useMemo(
+    () => ['All', ...Array.from(new Set(data.enforcementPlan.map((row) => row.best_time_window))).sort()],
+    [data.enforcementPlan]
+  );
+  const [station, setStation] = useState('All');
+  const [timeWindow, setTimeWindow] = useState('All');
+  const [priorityOnly, setPriorityOnly] = useState(true);
+
+  const rows = useMemo(() => {
+    return data.enforcementPlan.filter((row) => {
+      const priorityScore = row.operational_priority_score_0_100 ?? row.final_priority_score;
+      return (
+        (station === 'All' || row.police_station === station) &&
+        (timeWindow === 'All' || row.best_time_window === timeWindow) &&
+        (!priorityOnly || priorityScore >= 80)
+      );
+    });
+  }, [data.enforcementPlan, priorityOnly, station, timeWindow]);
+
+  const metrics = useMemo<IntelligenceMetric[]>(() => {
+    const total = rows.length;
+    const emergingCount = countWhere(rows, (row) => numericField(row, 'emerging_hotspot_score_0_100') >= 85);
+    const biasedCount = countWhere(rows, (row) => numericField(row, 'station_recording_bias_score_0_100') >= 75);
+    const repeatMovementCount = countWhere(rows, (row) => numericField(row, 'repeat_vehicle_movement_score_0_100') >= 75);
+    const reliableCount = countWhere(rows, (row) => numericField(row, 'time_window_reliability_score_0_100') >= 70);
+    const persistentCount = countWhere(rows, (row) =>
+      ['Chronic hotspot', 'Time-window persistent', 'Recurring watchlist', 'Emerging hotspot'].includes(
+        row.hotspot_persistence_class ?? ''
+      )
+    );
+    const severeTextCount = countWhere(rows, (row) => numericField(row, 'violation_text_severity_score_0_100') >= 70);
+    const loadedStationCount = countWhere(rows, (row) => ['High load', 'Critical load'].includes(row.station_load_band ?? ''));
+    const confidencePriorityCount = countWhere(rows, (row) => numericField(row, 'confidence_adjusted_priority_0_100') >= 90);
+
+    return [
+      {
+        title: '1. Emerging Hotspot Index',
+        primary: compactNumber(emergingCount),
+        primaryLabel: `${percentText(emergingCount, total)} of filtered zones`,
+        score: oneDecimal(meanField(rows, 'emerging_hotspot_score_0_100')),
+        scoreLabel: 'avg growth signal',
+        role: 'Detects zones where recent violation pressure is rising faster than the earlier baseline.',
+        action: 'Send an early audit or short fixed-window patrol before the zone becomes chronic.',
+        chart: scoreBandDistribution(rows, 'emerging_hotspot_score_0_100'),
+        examples: topRows(rows, 'emerging_hotspot_score_0_100'),
+        icon: Zap,
+        tone: 'orange'
+      },
+      {
+        title: '2. Station Recording Bias Score',
+        primary: compactNumber(biasedCount),
+        primaryLabel: `${percentText(biasedCount, total)} high-exposure rows`,
+        score: oneDecimal(meanField(rows, 'station_recording_bias_score_0_100')),
+        scoreLabel: 'avg exposure score',
+        role: 'Separates true hotspot pressure from places that look busy because they are already recorded heavily.',
+        action: 'Use exposure-adjusted ranking before allocating scarce tow or patrol capacity.',
+        chart: countDistribution(rows, (row) => row.station_recording_bias_band),
+        examples: topRows(rows, 'station_recording_bias_score_0_100'),
+        icon: ShieldCheck,
+        tone: 'blue'
+      },
+      {
+        title: '3. Repeat Vehicle Movement Pattern',
+        primary: compactNumber(repeatMovementCount),
+        primaryLabel: `${percentText(repeatMovementCount, total)} repeat-heavy rows`,
+        score: oneDecimal(meanField(rows, 'repeat_vehicle_movement_score_0_100')),
+        scoreLabel: 'avg movement pressure',
+        role: 'Flags whether the pressure is local chronic parking or cross-station repeat movement.',
+        action: 'Convert repeat-heavy zones from routine challans into targeted repeat-offender follow-up.',
+        chart: countDistribution(rows, (row) => row.repeat_vehicle_movement_pattern),
+        examples: topRows(rows, 'repeat_vehicle_movement_score_0_100'),
+        icon: Car,
+        tone: 'purple'
+      },
+      {
+        title: '4. Time-Window Reliability Score',
+        primary: compactNumber(reliableCount),
+        primaryLabel: `${percentText(reliableCount, total)} usable-evidence rows`,
+        score: oneDecimal(meanField(rows, 'time_window_reliability_score_0_100')),
+        scoreLabel: 'avg reliability',
+        role: 'Prevents sparse windows from being interpreted as true absence of traffic or parking pressure.',
+        action: 'Treat low-reliability windows as coverage warnings and verify before major deployment.',
+        chart: countDistribution(rows, (row) => row.time_window_reliability_band),
+        examples: topRows(rows, 'time_window_reliability_score_0_100'),
+        icon: Target,
+        tone: 'green'
+      },
+      {
+        title: '5. Hotspot Persistence Class',
+        primary: compactNumber(persistentCount),
+        primaryLabel: `${percentText(persistentCount, total)} recurring or emerging`,
+        score: compactNumber(countWhere(rows, (row) => row.hotspot_persistence_class === 'Chronic hotspot')),
+        scoreLabel: 'chronic hotspots',
+        role: 'Classifies zones as chronic, emerging, recurring watchlist, coverage-risk, or one-off.',
+        action: 'Match enforcement mode to lifecycle: clear chronic zones, audit emerging zones, watch sparse zones.',
+        chart: countDistribution(rows, (row) => row.hotspot_persistence_class),
+        examples: rows
+          .filter((row) => ['Chronic hotspot', 'Emerging hotspot'].includes(row.hotspot_persistence_class ?? ''))
+          .slice(0, 3),
+        icon: MapPinned,
+        tone: 'blue'
+      },
+      {
+        title: '6. Violation Text Severity Mining',
+        primary: compactNumber(severeTextCount),
+        primaryLabel: `${percentText(severeTextCount, total)} severe text signature`,
+        score: oneDecimal(meanField(rows, 'violation_text_severity_score_0_100')),
+        scoreLabel: 'avg text severity',
+        role: 'Mines violation wording for obstruction clues such as no-parking pressure or running-lane blockage.',
+        action: 'Use the text signature to explain why a hotspot needs tow, patrol, or engineering response.',
+        chart: countDistribution(rows, (row) => row.violation_text_severity_signature),
+        examples: topRows(rows, 'violation_text_severity_score_0_100'),
+        icon: Info,
+        tone: 'slate'
+      },
+      {
+        title: '7. Station-Level Enforcement Load',
+        primary: compactNumber(loadedStationCount),
+        primaryLabel: `${percentText(loadedStationCount, total)} high/critical load`,
+        score: oneDecimal(meanField(rows, 'station_enforcement_load_score_0_100')),
+        scoreLabel: 'avg station load',
+        role: 'Shows whether a police station is carrying too many priority zones for a normal enforcement wave.',
+        action: 'Escalate overloaded stations for tow support, pooled patrols, or staggered deployment windows.',
+        chart: countDistribution(rows, (row) => row.station_load_band),
+        examples: topRows(rows, 'station_enforcement_load_score_0_100'),
+        icon: Truck,
+        tone: 'orange'
+      },
+      {
+        title: '8. Confidence-Aware Priority',
+        primary: compactNumber(confidencePriorityCount),
+        primaryLabel: `${percentText(confidencePriorityCount, total)} high-confidence priorities`,
+        score: oneDecimal(meanField(rows, 'confidence_adjusted_priority_0_100')),
+        scoreLabel: 'avg confidence-adjusted priority',
+        role: 'Combines priority with evidence quality so the dispatch queue does not overreact to noisy rows.',
+        action: 'Use this as the final sorting layer for judge-facing and control-room deployment plans.',
+        chart: scoreBandDistribution(rows, 'confidence_adjusted_priority_0_100'),
+        examples: topRows(rows, 'confidence_adjusted_priority_0_100'),
+        icon: BarChart3,
+        tone: 'green'
+      }
+    ];
+  }, [rows]);
+
+  const persistenceDistribution = useMemo(
+    () => countDistribution(rows, (row) => row.hotspot_persistence_class, 7),
+    [rows]
+  );
+  const repeatDistribution = useMemo(
+    () => countDistribution(rows, (row) => row.repeat_vehicle_movement_pattern, 6),
+    [rows]
+  );
+  const topEvidenceRows = useMemo(
+    () =>
+      [...rows]
+        .sort((a, b) => {
+          const bScore =
+            numericField(b, 'confidence_adjusted_priority_0_100') +
+            numericField(b, 'emerging_hotspot_score_0_100') +
+            numericField(b, 'repeat_vehicle_movement_score_0_100');
+          const aScore =
+            numericField(a, 'confidence_adjusted_priority_0_100') +
+            numericField(a, 'emerging_hotspot_score_0_100') +
+            numericField(a, 'repeat_vehicle_movement_score_0_100');
+          return bScore - aScore;
+        })
+        .slice(0, 6),
+    [rows]
+  );
+
+  return (
+    <section className="stack">
+      <PageTitle
+        title="8-Metric Operational Intelligence Report"
+        subtitle="The new backend signals shown as a readable report: growth, bias, repeat movement, reliability, persistence, severity, station load and confidence."
+      />
+      <article className="intel-hero">
+        <div>
+          <span className="ops-label">Judge-facing proof layer</span>
+          <h2>These are not decorative metrics. Each one changes an enforcement decision.</h2>
+          <p>
+            The report recalculates under filters so a control-room officer can inspect one station or one time window
+            without losing the evidence trail behind the priority queue.
+          </p>
+        </div>
+        <div className="intel-hero-stats">
+          <div><strong>{compactNumber(rows.length)}</strong><span>filtered priority rows</span></div>
+          <div><strong>{compactNumber(data.metrics.emerging_priority_zones)}</strong><span>global emerging zones</span></div>
+          <div><strong>{compactNumber(data.metrics.hidden_hotspot_candidates)}</strong><span>global hidden candidates</span></div>
+        </div>
+      </article>
+
+      <div className="filter-bar intel-filter">
+        <select value={station} onChange={(event) => setStation(event.target.value)}>
+          {stations.map((item) => <option key={item}>{item}</option>)}
+        </select>
+        <select value={timeWindow} onChange={(event) => setTimeWindow(event.target.value)}>
+          {timeWindows.map((item) => <option key={item}>{item}</option>)}
+        </select>
+        <label className="toggle-pill">
+          <input type="checkbox" checked={priorityOnly} onChange={(event) => setPriorityOnly(event.target.checked)} />
+          Priority rows only
+        </label>
+      </div>
+
+      {rows.length === 0 ? (
+        <EmptyState title="No report rows" body="Relax the station, time-window or priority filter." />
+      ) : (
+        <>
+          <div className="intelligence-grid">
+            {metrics.map((metric) => (
+              <IntelligenceMetricCard key={metric.title} metric={metric} onSelect={onSelect} />
+            ))}
+          </div>
+
+          <div className="intel-deep-dive">
+            <ChartCard title="Lifecycle Mix" subtitle="How the selected hotspots behave operationally. Chronic zones need clearance; emerging zones need early audit.">
+              <DistributionBars data={persistenceDistribution} />
+            </ChartCard>
+            <ChartCard title="Repeat Movement Mix" subtitle="Separates local chronic repeat pressure from cross-station repeat movement.">
+              <DistributionBars data={repeatDistribution} />
+            </ChartCard>
+          </div>
+
+          <ChartCard title="Best Evidence Examples" subtitle="Click any row to open the full hotspot intelligence brief.">
+            <div className="intel-evidence-list">
+              {topEvidenceRows.map((row) => (
+                <button key={row.zone_id} type="button" onClick={() => onSelect(row.zone_id)}>
+                  <span>#{row.rank}</span>
+                  <strong>{row.zone_name}</strong>
+                  <small>{row.police_station} · {row.best_time_window}</small>
+                  <em>
+                    Priority {oneDecimal(row.confidence_adjusted_priority_0_100)} · Emerging {oneDecimal(row.emerging_hotspot_score_0_100)} ·
+                    Repeat {oneDecimal(row.repeat_vehicle_movement_score_0_100)}
+                  </em>
+                </button>
+              ))}
+            </div>
+          </ChartCard>
+        </>
+      )}
+    </section>
+  );
+}
+
+function IntelligenceMetricCard({
+  metric,
+  onSelect
+}: {
+  metric: IntelligenceMetric;
+  onSelect: (zoneId: string) => void;
+}) {
+  const Icon = metric.icon;
+  return (
+    <article className={`intel-card ${metric.tone}`}>
+      <div className="intel-card-top">
+        <div className="intel-icon"><Icon size={20} /></div>
+        <span>{metric.title}</span>
+      </div>
+      <div className="intel-primary">
+        <strong>{metric.primary}</strong>
+        <small>{metric.primaryLabel}</small>
+      </div>
+      <div className="intel-score">
+        <span>{metric.scoreLabel}</span>
+        <strong>{metric.score}</strong>
+      </div>
+      <p>{metric.role}</p>
+      <p className="intel-action">{metric.action}</p>
+      <DistributionBars data={metric.chart} compact />
+      <div className="intel-examples">
+        {metric.examples.slice(0, 3).map((row) => (
+          <button key={row.zone_id} type="button" onClick={() => onSelect(row.zone_id)}>
+            <span>{row.police_station}</span>
+            <strong>{row.zone_name}</strong>
+          </button>
+        ))}
+      </div>
+    </article>
+  );
+}
+
+function DistributionBars({ data, compact = false }: { data: ChartPoint[]; compact?: boolean }) {
+  const maxValue = Math.max(1, ...data.map((item) => item.value));
+  if (data.length === 0) return <EmptyState title="No distribution" body="No rows match this report filter." />;
+  return (
+    <div className={`distribution-bars ${compact ? 'compact' : ''}`}>
+      {data.map((item) => (
+        <div className="distribution-row" key={item.name}>
+          <span>{item.name}</span>
+          <div><i style={{ width: `${Math.max(4, (item.value / maxValue) * 100)}%` }} /></div>
+          <strong>{compactNumber(item.value)}</strong>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function PriorityQueue({ data, onSelect }: { data: ParkPulseData; onSelect: (zoneId: string) => void }) {
   const [station, setStation] = useState('All');
   const [action, setAction] = useState('All');
@@ -891,6 +1270,9 @@ function HotspotIntelligence({
             <span className="metric-pill">SLA {compactNumber(selectedPlan.clearance_sla_minutes)} min</span>
             <span className="metric-pill">Repeat {oneDecimal(selectedPlan.repeat_pressure_score_0_100)}</span>
             <span className="metric-pill">Patrol gap {oneDecimal(selectedPlan.patrol_gap_score_0_100)}</span>
+            {selectedPlan.hotspot_persistence_class && <span className="metric-pill">{selectedPlan.hotspot_persistence_class}</span>}
+            {selectedPlan.hidden_hotspot_flag && <span className="metric-pill">{selectedPlan.hidden_hotspot_flag}</span>}
+            {selectedPlan.time_window_reliability_band && <span className="metric-pill">{selectedPlan.time_window_reliability_band}</span>}
             {elrm && <span className="metric-pill">Recovery {elrm}</span>}
             {selectedPlan.carriageway_recovery_class && (
               <span className="metric-pill">{selectedPlan.carriageway_recovery_class}</span>
@@ -911,12 +1293,22 @@ function HotspotIntelligence({
             <div>
               <span>Repeat pressure</span>
               <strong>{oneDecimal(selectedPlan.repeat_pressure_score_0_100)}</strong>
-              <small>{oneDecimal((selectedPlan.chronic_vehicle_record_share ?? 0) * 100)}% chronic records</small>
+              <small>{selectedPlan.repeat_vehicle_movement_pattern ?? `${oneDecimal((selectedPlan.chronic_vehicle_record_share ?? 0) * 100)}% chronic records`}</small>
             </div>
             <div>
               <span>Patrol gap</span>
               <strong>{oneDecimal(selectedPlan.patrol_gap_score_0_100)}</strong>
               <small>{selectedPlan.patrol_gap_band ?? 'coverage score pending'}</small>
+            </div>
+            <div>
+              <span>Emerging score</span>
+              <strong>{oneDecimal(selectedPlan.emerging_hotspot_score_0_100)}</strong>
+              <small>Recent/prior ratio {oneDecimal(selectedPlan.recent_to_prior_pressure_ratio)}</small>
+            </div>
+            <div>
+              <span>Reliability</span>
+              <strong>{oneDecimal(selectedPlan.time_window_reliability_score_0_100)}</strong>
+              <small>{selectedPlan.time_window_coverage_warning ?? 'Evidence usable'}</small>
             </div>
           </div>
           {roadspace?.corridor_name && (
@@ -1019,7 +1411,7 @@ function TomorrowRisk({ data }: { data: ParkPulseData }) {
               <h3>{row.zone_name}</h3>
               <p>{row.best_time_window}</p>
               <strong>{oneDecimal(row.predicted_impact_score)}</strong>
-              <small>predicted obstruction-risk proxy</small>
+              <small>predicted obstruction-risk estimate</small>
             </article>
           ))}
         </div>
@@ -1114,11 +1506,16 @@ function StationView({ data, onSelect }: { data: ParkPulseData; onSelect: (zoneI
       </select>
       {station && (
         <div className="kpi-grid five">
-          <KpiCard label="Total Violations" value={compactNumber(station.total_violations)} icon={Car} />
-          <KpiCard label="High Impact" value={compactNumber(station.high_impact_hotspots)} icon={AlertTriangle} />
-          <KpiCard label="Avg Score" value={oneDecimal(station.avg_priority_score)} icon={Target} />
-          <KpiCard label="Recoverable Minutes" value={compactNumber(station.recoverable_lane_minutes)} icon={Navigation} />
-          <KpiCard label="Recovery / Hr" value={oneDecimal(station.recovery_minutes_per_resource_hour)} icon={ShieldCheck} />
+          <KpiCard label="Total Violations" value={compactNumber(station.total_violations)} icon={Car}
+            hint="Total illegal-parking records logged at this station across the period." />
+          <KpiCard label="High-Impact Hotspots" value={compactNumber(station.high_impact_hotspots)} icon={AlertTriangle}
+            hint="Zones in this station scoring in the top 10% of obstruction risk." />
+          <KpiCard label="Load Band" value={station.station_load_band ?? '—'} icon={Target}
+            hint="Relative enforcement load for this station versus the city (light / normal / heavy)." />
+          <KpiCard label="Recoverable Lane-Min" value={compactNumber(station.recoverable_lane_minutes)} icon={Navigation}
+            hint="Total Equivalent Lane Recovery Minutes available across this station's zones." />
+          <KpiCard label="Emerging / Hidden score" value={`${oneDecimal(station.avg_emerging_pressure)} / ${oneDecimal(station.avg_hidden_hotspot_score)}`} icon={ShieldCheck}
+            hint="Average emerging-pressure score (recent growth) and hidden-hotspot score (risky despite low past recording) for this station, each 0-100." />
         </div>
       )}
       <PriorityMiniList rows={stationRows} onSelect={onSelect} />
@@ -1151,7 +1548,7 @@ function Methodology() {
         </p>
         <p>
           Since direct speed or queue-length data is not available, the score is used as an
-          enforcement-prioritization proxy, not as an exact congestion measurement.
+          enforcement-prioritization estimate, not as an exact congestion measurement.
         </p>
       </article>
       <article className="method-card">
@@ -1170,19 +1567,19 @@ function Methodology() {
         <p>
           High violation counts can reflect both true parking pressure and enforcement visibility.
           ParkPulse compares raw hotspot intensity with exposure-adjusted rankings using device,
-          officer, station, and active-day coverage proxies.
+          officer, station, and active-day coverage estimates.
         </p>
       </article>
       <article className="method-card">
         <h2>Equivalent Lane Recovery Minutes (ELRM)</h2>
         <p>
-          ParkPulse estimates Equivalent Lane Recovery Minutes as an operational proxy for how much running-lane time may be recovered
+          ParkPulse estimates Equivalent Lane Recovery Minutes as an operational planning estimate for how much running-lane time may be recovered
           if the recommended intervention is executed in the target window. It combines obstruction intensity, target-window duration,
           carriageway context, recurrence, action fit, and confidence.
         </p>
         <p>
           ELRM is reported as a <strong>range</strong> (conservative to optimistic enforcement effectiveness), not a single point, so the
-          assumptions stay explicit. It is a decision-support proxy, not a live speed or queue-length measurement.
+          assumptions stay explicit. It is a decision-support estimate, not a live speed or queue-length measurement.
         </p>
       </article>
       <article className="method-card">
@@ -1194,7 +1591,7 @@ function Methodology() {
           dispatch confidently.
         </p>
         <p>
-          These metrics remain honest proxies because the dataset has enforcement records, not live speed, queue, or signal-health feeds.
+          These metrics remain honest modelled estimates because the dataset has enforcement records, not live speed, queue, or signal-health feeds.
           In production, the same layer can absorb GPS/probe speed, signal-health, towing availability, and officer roster data without
           changing the command workflow.
         </p>
@@ -1255,7 +1652,7 @@ function Methodology() {
         <h2>Glossary</h2>
         <dl className="glossary">
           <div><dt>TORI</dt><dd>Traffic Obstruction Risk Index (0–100). An explainable priority score, not a measured speed.</dd></div>
-          <div><dt>ELRM</dt><dd>Equivalent Lane Recovery Minutes — estimated running-lane time recovered if a zone is actioned, shown as a low–high range. A proxy, not measured delay.</dd></div>
+          <div><dt>ELRM</dt><dd>Equivalent Lane Recovery Minutes — estimated running-lane time recovered if a zone is actioned, shown as a low–high range. A modelled estimate, not measured delay.</dd></div>
           <div><dt>Capacity-loss pressure</dt><dd>How strongly a hotspot is likely to reduce usable carriageway capacity before enforcement.</dd></div>
           <div><dt>Queue spillback risk</dt><dd>Likelihood that an obstruction can push queues into a junction, signal approach, or main-road choke point.</dd></div>
           <div><dt>Clearance SLA</dt><dd>Suggested response deadline: immediate, rapid, fixed-window, or watchlist.</dd></div>
@@ -1265,7 +1662,7 @@ function Methodology() {
           <div><dt>Junction sensitivity</dt><dd>How exposed a zone is to a signal/crossing approach, from observed context.</dd></div>
           <div><dt>Exposure adjustment</dt><dd>Down-weights zones that look busy only because they are policed/recorded more often.</dd></div>
           <div><dt>Recovery / resource-hr</dt><dd>Lane-minutes recovered per patrol+tow hour — deployment efficiency.</dd></div>
-          <div><dt>Enforcement ROI</dt><dd>Proxy return: expected obstruction reduction per resource-hour.</dd></div>
+          <div><dt>Enforcement ROI</dt><dd>Estimated return: expected obstruction reduction per resource-hour.</dd></div>
           <div><dt>Confidence band</dt><dd>Data trust (High/Medium/Low) from record volume, validation status and active days.</dd></div>
           <div><dt>Robust Top-20</dt><dd>Share of top-20 hotspots that stay top-20 using only high-confidence records — a stability check.</dd></div>
           <div><dt>Capture@K</dt><dd>Share of next-period high-pressure cells captured by the top-K ranked zones (time-safe validation).</dd></div>

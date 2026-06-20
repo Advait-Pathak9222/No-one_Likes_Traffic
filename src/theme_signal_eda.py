@@ -8,7 +8,7 @@ This module answers a specific hackathon question:
 
 It deliberately separates:
 - strong dataset-backed signals,
-- weak-but-useful proxy signals,
+- weak-but-useful inferred signals,
 - and signals that are not supported by this dataset.
 """
 

@@ -139,7 +139,7 @@ def enrich_plan(plan: pd.DataFrame) -> pd.DataFrame:
     out["expected_impact_score"] = out["final_tori_0_100"]
     out["final_priority_score"] = out["final_tori_0_100"]
     out["stable_pcis"] = out["stable_tori"]
-    out["emerging_score"] = 0.0
+    out["emerging_score"] = out.get("emerging_hotspot_score_0_100", 0.0)
     return out
 
 
@@ -202,6 +202,23 @@ def export_enforcement_plan(plan: pd.DataFrame, operational_impact: pd.DataFrame
         "final_priority_score",
         "stable_pcis",
         "emerging_score",
+        "confidence_adjusted_priority_0_100",
+        "emerging_hotspot_score_0_100",
+        "hidden_hotspot_score_0_100",
+        "hidden_hotspot_flag",
+        "recent_violation_rate",
+        "prior_violation_rate",
+        "recent_to_prior_pressure_ratio",
+        "hotspot_persistence_class",
+        "time_window_reliability_score_0_100",
+        "time_window_reliability_band",
+        "time_window_coverage_warning",
+        "station_recording_bias_score_0_100",
+        "station_recording_bias_band",
+        "repeat_vehicle_movement_score_0_100",
+        "repeat_vehicle_movement_pattern",
+        "violation_text_severity_score_0_100",
+        "violation_text_severity_signature",
         "confidence_band",
         "recommended_action",
         "reasoning",
@@ -215,6 +232,12 @@ def export_enforcement_plan(plan: pd.DataFrame, operational_impact: pd.DataFrame
         "estimated_patrol_hours",
         "estimated_tow_hours",
         "enforcement_roi",
+        "station_priority_zone_count",
+        "station_high_priority_zone_count",
+        "station_patrol_hours_total",
+        "station_tow_hours_total",
+        "station_enforcement_load_score_0_100",
+        "station_load_band",
         "estimated_capacity_loss_minutes",
         "capacity_loss_pressure_0_100",
         "queue_spillback_risk_0_100",
@@ -290,6 +313,19 @@ def export_hotspots_geojson(tori: pd.DataFrame, plan: pd.DataFrame) -> None:
             "stable_pcis": row.stable_tori,
             "emerging_score": 0,
             "final_priority_score": row.final_tori_0_100,
+            "confidence_adjusted_priority_0_100": getattr(row, "confidence_adjusted_priority_0_100", None),
+            "emerging_hotspot_score_0_100": getattr(row, "emerging_hotspot_score_0_100", None),
+            "hidden_hotspot_score_0_100": getattr(row, "hidden_hotspot_score_0_100", None),
+            "hidden_hotspot_flag": getattr(row, "hidden_hotspot_flag", None),
+            "hotspot_persistence_class": getattr(row, "hotspot_persistence_class", None),
+            "time_window_reliability_score_0_100": getattr(row, "time_window_reliability_score_0_100", None),
+            "time_window_reliability_band": getattr(row, "time_window_reliability_band", None),
+            "station_recording_bias_score_0_100": getattr(row, "station_recording_bias_score_0_100", None),
+            "station_recording_bias_band": getattr(row, "station_recording_bias_band", None),
+            "repeat_vehicle_movement_score_0_100": getattr(row, "repeat_vehicle_movement_score_0_100", None),
+            "repeat_vehicle_movement_pattern": getattr(row, "repeat_vehicle_movement_pattern", None),
+            "violation_text_severity_score_0_100": getattr(row, "violation_text_severity_score_0_100", None),
+            "violation_text_severity_signature": getattr(row, "violation_text_severity_signature", None),
             "recommended_action": row.recommended_action,
             "confidence_band": row.confidence_band,
             "best_time_window": TIME_BLOCK_LABELS.get(row.time_block, row.time_block),
@@ -330,6 +366,10 @@ def export_station_summary(tori: pd.DataFrame, plan: pd.DataFrame, operational_i
             confidence_score=("confidence_score", "mean"),
             avg_repeat_pressure=("repeat_pressure_score_0_100", "mean"),
             avg_patrol_gap=("patrol_gap_score_0_100", "mean"),
+            avg_emerging_pressure=("emerging_hotspot_score_0_100", "mean"),
+            avg_hidden_hotspot_score=("hidden_hotspot_score_0_100", "mean"),
+            avg_time_window_reliability=("time_window_reliability_score_0_100", "mean"),
+            avg_confidence_adjusted_priority=("confidence_adjusted_priority_0_100", "mean"),
         )
         .reset_index()
     )
@@ -340,11 +380,23 @@ def export_station_summary(tori: pd.DataFrame, plan: pd.DataFrame, operational_i
             top_action=("recommended_action", lambda s: s.mode().iloc[0] if len(s.mode()) else "Targeted patrol"),
             patrol_hours_required=("estimated_patrol_hours", "sum"),
             tow_hours_required=("estimated_tow_hours", "sum"),
+            station_priority_zone_count=("station_priority_zone_count", "max"),
+            station_high_priority_zone_count=("station_high_priority_zone_count", "max"),
+            station_enforcement_load_score_0_100=("station_enforcement_load_score_0_100", "max"),
+            station_load_band=("station_load_band", lambda s: s.mode().iloc[0] if len(s.mode()) else "Normal load"),
         )
         .reset_index()
     )
     station = station.merge(plan_station, on="station", how="left").fillna(
-        {"top_action": "Targeted patrol", "patrol_hours_required": 0, "tow_hours_required": 0}
+        {
+            "top_action": "Targeted patrol",
+            "patrol_hours_required": 0,
+            "tow_hours_required": 0,
+            "station_priority_zone_count": 0,
+            "station_high_priority_zone_count": 0,
+            "station_enforcement_load_score_0_100": 0,
+            "station_load_band": "Normal load",
+        }
     )
     if not operational_impact.empty:
         impact_station = (
@@ -380,6 +432,14 @@ def export_station_summary(tori: pd.DataFrame, plan: pd.DataFrame, operational_i
         "recovery_minutes_per_resource_hour",
         "avg_repeat_pressure",
         "avg_patrol_gap",
+        "avg_emerging_pressure",
+        "avg_hidden_hotspot_score",
+        "avg_time_window_reliability",
+        "avg_confidence_adjusted_priority",
+        "station_priority_zone_count",
+        "station_high_priority_zone_count",
+        "station_enforcement_load_score_0_100",
+        "station_load_band",
     ]
     write_frontend_json("station_summary.json", normalize_records(station[columns]))
 
@@ -480,6 +540,10 @@ def export_metrics(
         "high_spillback_risk_zones": int((operational_impact["queue_spillback_risk_0_100"] >= 70).sum()) if not operational_impact.empty and "queue_spillback_risk_0_100" in operational_impact.columns else None,
         "chronic_repeat_priority_zones": int((operational_impact["repeat_pressure_score_0_100"] >= 85).sum()) if not operational_impact.empty and "repeat_pressure_score_0_100" in operational_impact.columns else None,
         "patrol_gap_priority_zones": int((operational_impact["patrol_gap_score_0_100"] >= 85).sum()) if not operational_impact.empty and "patrol_gap_score_0_100" in operational_impact.columns else None,
+        "emerging_priority_zones": int((plan["emerging_hotspot_score_0_100"] >= 85).sum()) if "emerging_hotspot_score_0_100" in plan.columns else None,
+        "hidden_hotspot_candidates": int((plan["hidden_hotspot_score_0_100"] >= 85).sum()) if "hidden_hotspot_score_0_100" in plan.columns else None,
+        "low_reliability_priority_zones": int((plan["time_window_reliability_score_0_100"] < 40).sum()) if "time_window_reliability_score_0_100" in plan.columns else None,
+        "critical_station_load_count": int((plan.get("station_load_band", pd.Series(dtype=str)) == "Critical load").sum()) if "station_load_band" in plan.columns else None,
         "immediate_clearance_zones": int((operational_impact["clearance_sla_minutes"] <= 30).sum()) if not operational_impact.empty and "clearance_sla_minutes" in operational_impact.columns else None,
         "median_clearance_sla_minutes": int(operational_impact["clearance_sla_minutes"].median()) if not operational_impact.empty and "clearance_sla_minutes" in operational_impact.columns else None,
         "avg_evidence_quality_score": round(float(operational_impact["evidence_quality_score_0_100"].mean()), 1) if not operational_impact.empty and "evidence_quality_score_0_100" in operational_impact.columns else None,

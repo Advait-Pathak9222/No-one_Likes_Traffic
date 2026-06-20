@@ -259,10 +259,30 @@ def train_forecast_model(table: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFram
         valid[f"pred_{model_name}"] = np.expm1(model.predict(valid[feature_cols])).clip(min=0)
         trained_model_names.append(model_name)
 
+    ensemble_names: list[str] = []
+    model_pred_cols = [f"pred_{name}" for name in trained_model_names]
+    if len(model_pred_cols) >= 2:
+        # Different boosters win at different top-K operating points. These
+        # validation-only blends add a conservative ensemble option without
+        # changing the time-safe train/validation boundary.
+        valid["pred_ensemble_mean"] = valid[model_pred_cols].mean(axis=1).clip(lower=0)
+        valid["pred_ensemble_median"] = valid[model_pred_cols].median(axis=1).clip(lower=0)
+        valid["pred_ensemble_rank_mean"] = (
+            valid.groupby("created_date")[model_pred_cols]
+            .rank(method="average", pct=True)
+            .mean(axis=1)
+        )
+        if "pred_baseline" in valid.columns:
+            valid["pred_ensemble_mean_plus_baseline"] = (
+                0.82 * valid["pred_ensemble_mean"] + 0.18 * valid["pred_baseline"]
+            ).clip(lower=0)
+            ensemble_names.append("ensemble_mean_plus_baseline")
+        ensemble_names.extend(["ensemble_mean", "ensemble_median", "ensemble_rank_mean"])
+
     metric_rows = []
     score_columns = [("pred_baseline", "rolling_7d_baseline")] + [
         (f"pred_{name}", name) for name in trained_model_names
-    ]
+    ] + [(f"pred_{name}", name) for name in ensemble_names]
     for score_col, name in score_columns:
         for k in [10, 20, 50, 100]:
             captures = []

@@ -34,10 +34,10 @@ OPERATIONAL_SCORE_COLUMNS = {
 
 
 def evaluate_tori_ranking() -> pd.DataFrame:
-    """Compare recurrence/action rankings against future obstruction proxy.
+    """Compare recurrence/action rankings against future obstruction estimate.
 
     Notes:
-    - TORI and operational columns are full-period static/proxy scores, so their
+    - TORI and operational columns are full-period static/modelled scores, so their
       comparison is a retrospective ranking diagnostic.
     - Rolling baseline columns are time-safe because they use lagged history.
     """

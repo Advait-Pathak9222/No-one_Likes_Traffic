@@ -911,7 +911,7 @@
     "approx_length_km": 0.17,
     "max_tori": 99.4,
     "mean_obstruction": 96.0,
-    "dominant_bottleneck": "Metro feeder spillover",
+    "dominant_bottleneck": "Market/commercial spillover",
     "peak_window": "00:00–06:00 Night",
     "centroid_lat": 12.964114,
     "centroid_lon": 77.575955,

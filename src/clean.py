@@ -154,7 +154,7 @@ def add_junction_criticality(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def add_base_scores(df: pd.DataFrame) -> pd.DataFrame:
-    """Add row-level obstruction and analytical weight proxies."""
+    """Add row-level obstruction and analytical weight estimates."""
     out = df.copy()
     out["base_obstruction_score"] = (
         out["violation_severity"]

@@ -63,12 +63,12 @@ npm run vite:build
 The City Hotspot Map uses Leaflet with locally cached CARTO/OpenStreetMap tiles
 for the Bengaluru view. This keeps the judge demo stable even if the venue
 network is weak. The analytical layers are still ParkPulse-generated: hotspot
-points, lane-context proxy and inferred corridor obstruction risk come from the
+points, inferred lane context and inferred corridor obstruction risk come from the
 backend exports, not from the basemap.
 
 When available, the map uses `public/data/lane_hotspots.geojson`, which includes
-lane-context proxy, dominant obstruction reason, mitigation steps, signal-feed
-status, and historical enforcement/workforce proxy. If that file is missing,
+inferred lane context, dominant obstruction reason, mitigation steps, signal-feed
+status, and historical enforcement coverage estimate. If that file is missing,
 the app falls back to the older `hotspots.geojson` layer.
 
 The backend also exports `public/data/congestion_risk_segments.geojson` for a
@@ -113,6 +113,6 @@ Bengaluru hotspots. Mock data is only for frontend demo resilience.
 
 ## Methodology Caution
 
-ParkPulse estimates obstruction-risk and enforcement-priority proxies. It does
+ParkPulse estimates obstruction-risk and enforcement-priority modelled measures. It does
 not claim exact speed improvement or exact travel-time reduction because direct
 speed, flow, and queue-length data are not present in the provided dataset.

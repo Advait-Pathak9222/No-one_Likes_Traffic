@@ -1,7 +1,7 @@
 """Corridor and bottleneck intelligence for ParkPulse.
 
 Every signal in this module is derived only from the provided violation dataset
-and the already-computed road-space proxy table. No external road network, GIS,
+and the already-computed road-space estimate table. No external road network, GIS,
 basemap, or map-matching service is used. Corridor geometry and corridor links
 are *inferred* from the spatial distribution of recorded violations, not from
 surveyed road centerlines.

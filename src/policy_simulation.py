@@ -5,7 +5,7 @@ patrol/tow constraints. It is intentionally simple and transparent: a duty
 officer can understand the rule, the budget, and the resulting trade-off.
 
 The simulator does not claim measured traffic delay. It compares policies using
-the operational proxies already exported by the backend:
+the operational estimates already exported by the backend:
 
 - recoverable lane-minutes,
 - capacity-loss minutes covered,
@@ -207,7 +207,7 @@ def summarize_policy_simulation(results: pd.DataFrame) -> dict[str, Any]:
         "parkpulse_vs_density_recovery_uplift_pct": _uplift("Raw violation density", "estimated_lane_recovery_minutes"),
         "parkpulse_vs_tori_spillback_uplift_pct": _uplift("TORI-only action score", "high_spillback_zones_covered"),
         "policy_lab_note": (
-            "Policy simulation compares dispatch rules under patrol/tow budgets using transparent operational proxies. "
+            "Policy simulation compares dispatch rules under patrol/tow budgets using transparent operational estimates. "
             "It is a planning back-test, not measured live traffic delay."
         ),
     }

@@ -37,6 +37,10 @@ export function ZoneBrief({ plan, roadspace }: ZoneBriefProps) {
         <span className="brief-chip">{plan.confidence_band} confidence</span>
         <span className="brief-chip">Repeat pressure {oneDecimal(plan.repeat_pressure_score_0_100)}</span>
         <span className="brief-chip">Patrol gap {oneDecimal(plan.patrol_gap_score_0_100)}</span>
+        {plan.hotspot_persistence_class && <span className="brief-chip">{plan.hotspot_persistence_class}</span>}
+        {plan.hidden_hotspot_flag && <span className="brief-chip">{plan.hidden_hotspot_flag}</span>}
+        {plan.time_window_reliability_band && <span className="brief-chip">{plan.time_window_reliability_band}</span>}
+        {plan.station_load_band && <span className="brief-chip">{plan.station_load_band}</span>}
         {plan.carriageway_recovery_class && <span className="brief-chip">{plan.carriageway_recovery_class}</span>}
         {roadspace?.bottleneck_class && <span className="brief-chip">{roadspace.bottleneck_class}</span>}
       </div>
@@ -49,6 +53,10 @@ export function ZoneBrief({ plan, roadspace }: ZoneBriefProps) {
         <div><span>Equivalent lane recovery</span><strong>{recoveryRange(plan)}</strong></div>
         <div><span>Repeat pressure</span><strong>{oneDecimal(plan.repeat_pressure_score_0_100)}</strong></div>
         <div><span>Patrol gap</span><strong>{oneDecimal(plan.patrol_gap_score_0_100)}</strong></div>
+        <div><span>Emerging score</span><strong>{oneDecimal(plan.emerging_hotspot_score_0_100)}</strong></div>
+        <div><span>Hidden score</span><strong>{oneDecimal(plan.hidden_hotspot_score_0_100)}</strong></div>
+        <div><span>Time-window reliability</span><strong>{oneDecimal(plan.time_window_reliability_score_0_100)}</strong></div>
+        <div><span>Text severity</span><strong>{oneDecimal(plan.violation_text_severity_score_0_100)}</strong></div>
         <div><span>Recovery / resource-hr</span><strong>{oneDecimal(plan.recovery_minutes_per_resource_hour)}</strong></div>
         <div><span>Evidence quality</span><strong>{oneDecimal(plan.evidence_quality_score_0_100)}</strong></div>
         <div><span>Operational priority</span><strong>{oneDecimal(plan.operational_priority_score_0_100)}</strong></div>
@@ -68,6 +76,12 @@ export function ZoneBrief({ plan, roadspace }: ZoneBriefProps) {
               {roadspace.corridor_linked_hotspots ? ` — ${roadspace.corridor_linked_hotspots} linked hotspots` : ''}
               {roadspace.corridor_length_km ? `, ~${oneDecimal(roadspace.corridor_length_km)} km` : ''}
             </p>
+          )}
+          {plan.violation_text_severity_signature && (
+            <p><strong>Violation severity signature:</strong> {plan.violation_text_severity_signature}</p>
+          )}
+          {plan.time_window_coverage_warning && (
+            <p><strong>Reliability note:</strong> {plan.time_window_coverage_warning}</p>
           )}
         </section>
       )}
@@ -102,7 +116,7 @@ export function ZoneBrief({ plan, roadspace }: ZoneBriefProps) {
       <footer className="brief-footer">
         <span>Centroid {oneDecimal(plan.centroid_lat)}, {oneDecimal(plan.centroid_lon)} (from violation coordinates)</span>
         <span>
-          Proxy metrics derived only from the enforcement violation dataset. Not live vehicle speed,
+          Modelled estimates derived only from the enforcement violation dataset. Not live vehicle speed,
           surveyed lane GIS, signal-health telemetry, or live workforce data.
         </span>
       </footer>

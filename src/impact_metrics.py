@@ -2,7 +2,7 @@
 
 The dataset does not contain speed, flow, or queue-length telemetry, so this
 module does not claim travel-time savings. Instead, it estimates an explicit
-proxy:
+decision-support measure:
 
 Equivalent Lane Recovery Minutes (ELRM)
     The likely running-lane minutes recovered in the target enforcement window
@@ -78,7 +78,7 @@ TRAFFIC_SENSITIVE_TIME_FACTOR = {
     "22-24_late_night": 0.84,
 }
 
-# Carriageway recovery class -> bounded multiplier. These nudge the proxy toward
+# Carriageway recovery class -> bounded multiplier. These nudge the estimate toward
 # higher-throughput carriageways; they are clipped tightly so they refine rather
 # than inflate ELRM. All classes are derived only from dataset-observed shares.
 CARRIAGEWAY_FACTOR = {
@@ -214,14 +214,14 @@ def build_operational_impact_table(
         road_cols = [col for col in merge_cols if col in roadspace.columns]
         out = out.merge(roadspace[road_cols], on="zone_id", how="left")
     else:
-        out["lane_context"] = "Road segment proxy"
+        out["lane_context"] = "Inferred road segment"
         out["dominant_lane_issue"] = "Parking obstruction risk"
         out["lane_obstruction_proxy_0_100"] = np.nan
         out["weighted_violation_count"] = np.nan
 
     out["lane_obstruction_proxy_0_100"] = out["lane_obstruction_proxy_0_100"].fillna(out["final_tori_0_100"])
     out["weighted_violation_count"] = out["weighted_violation_count"].fillna(out["violation_count"])
-    out["lane_context"] = out["lane_context"].fillna("Road segment proxy")
+    out["lane_context"] = out["lane_context"].fillna("Inferred road segment")
     out["dominant_lane_issue"] = out["dominant_lane_issue"].fillna("Parking obstruction risk")
     for share_col in ["main_road_share_observed", "large_vehicle_space_share", "signal_zebra_share_observed"]:
         if share_col not in out.columns:
@@ -231,6 +231,12 @@ def build_operational_impact_table(
         "repeat_pressure_score_0_100",
         "chronic_vehicle_pressure_0_100",
         "patrol_gap_score_0_100",
+        "confidence_adjusted_priority_0_100",
+        "emerging_hotspot_score_0_100",
+        "hidden_hotspot_score_0_100",
+        "time_window_reliability_score_0_100",
+        "station_enforcement_load_score_0_100",
+        "violation_text_severity_score_0_100",
     ]:
         if score_col not in out.columns:
             out[score_col] = 0.0
@@ -238,6 +244,20 @@ def build_operational_impact_table(
     if "patrol_gap_band" not in out.columns:
         out["patrol_gap_band"] = "Covered"
     out["patrol_gap_band"] = out["patrol_gap_band"].fillna("Covered")
+    string_defaults = {
+        "hidden_hotspot_flag": "Visible/covered hotspot",
+        "hotspot_persistence_class": "Recurring watchlist",
+        "time_window_reliability_band": "Usable evidence",
+        "time_window_coverage_warning": "Time-window evidence is usable",
+        "station_recording_bias_band": "Medium recording exposure",
+        "repeat_vehicle_movement_pattern": "Low repeat movement",
+        "violation_text_severity_signature": "General parking pressure",
+        "station_load_band": "Normal load",
+    }
+    for column, default in string_defaults.items():
+        if column not in out.columns:
+            out[column] = default
+        out[column] = out[column].fillna(default)
 
     out["effective_window_minutes"] = out["time_block"].map(WINDOW_MINUTES).fillna(120.0)
     out["obstruction_fraction"] = out["lane_obstruction_proxy_0_100"].clip(lower=0, upper=100) / 100.0
@@ -363,8 +383,12 @@ def build_operational_impact_table(
         + 0.22 * out["queue_spillback_risk_0_100"]
         + 20.0 * recovery_signal
         + 0.12 * out["evidence_quality_score_0_100"]
-        + 0.10 * out["repeat_pressure_score_0_100"]
-        + 0.08 * out["patrol_gap_score_0_100"]
+        + 0.08 * out["repeat_pressure_score_0_100"]
+        + 0.06 * out["patrol_gap_score_0_100"]
+        + 0.06 * out["confidence_adjusted_priority_0_100"]
+        + 0.04 * out["emerging_hotspot_score_0_100"]
+        + 0.03 * out["hidden_hotspot_score_0_100"]
+        + 0.01 * out["violation_text_severity_score_0_100"]
     ).clip(lower=0.0, upper=100.0).round(1)
     out["clearance_sla_minutes"] = [
         _clearance_sla_minutes(spillback, capacity)
@@ -394,9 +418,9 @@ def build_operational_impact_table(
         [
             "High-confidence recovery opportunity",
             "Well-supported recovery opportunity",
-            "Useful but moderate-confidence recovery proxy",
+            "Useful but moderate-confidence recovery estimate",
         ],
-        default="Exploratory recovery proxy",
+        default="Exploratory recovery estimate",
     )
 
     cols = [
@@ -415,6 +439,22 @@ def build_operational_impact_table(
         "carriageway_recovery_class",
         "violation_count",
         "final_tori_0_100",
+        "confidence_adjusted_priority_0_100",
+        "emerging_hotspot_score_0_100",
+        "hidden_hotspot_score_0_100",
+        "hidden_hotspot_flag",
+        "hotspot_persistence_class",
+        "time_window_reliability_score_0_100",
+        "time_window_reliability_band",
+        "time_window_coverage_warning",
+        "station_recording_bias_score_0_100",
+        "station_recording_bias_band",
+        "repeat_vehicle_movement_score_0_100",
+        "repeat_vehicle_movement_pattern",
+        "violation_text_severity_score_0_100",
+        "violation_text_severity_signature",
+        "station_enforcement_load_score_0_100",
+        "station_load_band",
         "estimated_patrol_hours",
         "estimated_tow_hours",
         "resource_hours",
@@ -475,6 +515,10 @@ def summarize_operational_impact(impact: pd.DataFrame) -> dict[str, Any]:
         "high_spillback_risk_zones": int((impact["queue_spillback_risk_0_100"] >= 70).sum()),
         "chronic_repeat_priority_zones": int((impact["repeat_pressure_score_0_100"] >= 85).sum()),
         "patrol_gap_priority_zones": int((impact["patrol_gap_score_0_100"] >= 85).sum()),
+        "emerging_priority_zones": int((impact["emerging_hotspot_score_0_100"] >= 85).sum()) if "emerging_hotspot_score_0_100" in impact.columns else 0,
+        "hidden_hotspot_candidates": int((impact["hidden_hotspot_score_0_100"] >= 85).sum()) if "hidden_hotspot_score_0_100" in impact.columns else 0,
+        "low_reliability_priority_zones": int((impact["time_window_reliability_score_0_100"] < 40).sum()) if "time_window_reliability_score_0_100" in impact.columns else 0,
+        "critical_station_load_zones": int((impact["station_load_band"] == "Critical load").sum()) if "station_load_band" in impact.columns else 0,
         "immediate_clearance_zones": int((impact["clearance_sla_minutes"] <= 30).sum()),
         "median_clearance_sla_minutes": int(impact["clearance_sla_minutes"].median()),
         "avg_evidence_quality_score": round(float(impact["evidence_quality_score_0_100"].mean()), 1),

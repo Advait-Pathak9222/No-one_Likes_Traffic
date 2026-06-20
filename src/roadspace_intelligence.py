@@ -5,7 +5,7 @@ but it does not include lane geometry, signal-health telemetry, or live police
 roster feeds. This module therefore separates evidence into three levels:
 
 1. observed in the violation data,
-2. proxy inferred from repeated enforcement/recording patterns,
+2. modelled estimate inferred from repeated enforcement/recording patterns,
 3. external feed required.
 
 That distinction is important for a judge-facing system: ParkPulse should be
@@ -145,7 +145,7 @@ def build_reason_aggregates(clean_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def add_lane_obstruction_scores(frame: pd.DataFrame) -> pd.DataFrame:
-    """Add lane/road-space obstruction proxy scores."""
+    """Add lane/road-space obstruction estimate scores."""
     out = frame.copy()
     out["kerbside_illegal_parking_share"] = (
         out["wrong_parking_share"].fillna(0)
@@ -226,6 +226,36 @@ def infer_lane_context(row: pd.Series) -> str:
 def build_reason_codes(row: pd.Series) -> list[dict[str, Any]]:
     """Build transparent hotspot reasons with evidence level."""
     reasons: list[dict[str, Any]] = []
+    if row.get("hotspot_persistence_class") in {"Chronic hotspot", "Emerging hotspot", "Coverage-risk watchlist"}:
+        reasons.append(
+            {
+                "reason": f"Hotspot lifecycle: {row.get('hotspot_persistence_class')}",
+                "evidence": (
+                    f"Emerging score {row.get('emerging_hotspot_score_0_100', 0):.1f}; "
+                    f"recent/prior pressure ratio {row.get('recent_to_prior_pressure_ratio', 0):.2f}."
+                ),
+                "support_level": "modelled",
+            }
+        )
+    if row.get("hidden_hotspot_score_0_100", 0) >= 85:
+        reasons.append(
+            {
+                "reason": "Hidden hotspot candidate after recording-bias adjustment",
+                "evidence": (
+                    f"Hidden score {row.get('hidden_hotspot_score_0_100', 0):.1f}; "
+                    f"station recording bias {row.get('station_recording_bias_score_0_100', 0):.1f}."
+                ),
+                "support_level": "modelled-estimate",
+            }
+        )
+    if row.get("time_window_reliability_score_0_100", 100) < 40:
+        reasons.append(
+            {
+                "reason": "Time-window evidence is sparse",
+                "evidence": str(row.get("time_window_coverage_warning", "Schedule a patrol audit before treating absence as low risk.")),
+                "support_level": "modelled-estimate",
+            }
+        )
     if row["kerbside_illegal_parking_share"] >= 0.25:
         reasons.append(
             {
@@ -272,7 +302,19 @@ def build_reason_codes(row: pd.Series) -> list[dict[str, Any]]:
                 "reason": "Chronic repeat-vehicle pressure is present",
                 "evidence": (
                     f"{row.get('repeat_vehicle_record_share', 0):.0%} repeat-vehicle records and "
-                    f"{row.get('chronic_vehicle_record_share', 0):.0%} chronic-vehicle records."
+                    f"{row.get('chronic_vehicle_record_share', 0):.0%} chronic-vehicle records; "
+                    f"{row.get('repeat_vehicle_movement_pattern', 'repeat pattern unavailable')}."
+                ),
+                "support_level": "observed",
+            }
+        )
+    if row.get("violation_text_severity_score_0_100", 0) >= 80:
+        reasons.append(
+            {
+                "reason": "Violation text indicates high road-space severity",
+                "evidence": (
+                    f"{row.get('violation_text_severity_signature', 'Severity signature unavailable')} "
+                    f"(score {row.get('violation_text_severity_score_0_100', 0):.1f})."
                 ),
                 "support_level": "observed",
             }
@@ -283,9 +325,9 @@ def build_reason_codes(row: pd.Series) -> list[dict[str, Any]]:
                 "reason": "Patrol-gap opportunity: high risk with lower historical coverage",
                 "evidence": (
                     f"Patrol-gap score {row.get('patrol_gap_score_0_100', 0):.1f}; "
-                    f"{row.get('workforce_presence_band', 'coverage proxy unavailable')}."
+                    f"{row.get('workforce_presence_band', 'coverage estimate unavailable')}."
                 ),
-                "support_level": "proxy",
+                "support_level": "modelled-estimate",
             }
         )
     if row["workforce_presence_proxy_0_100"] >= 75:
@@ -293,7 +335,7 @@ def build_reason_codes(row: pd.Series) -> list[dict[str, Any]]:
             {
                 "reason": "High historical police/enforcement recording presence",
                 "evidence": f"{int(row['historical_recording_officer_ids'])} officer IDs, {int(row['historical_recording_devices'])} devices, {int(row['active_recording_days'])} active days.",
-                "support_level": "proxy",
+                "support_level": "modelled-estimate",
             }
         )
     else:
@@ -301,7 +343,7 @@ def build_reason_codes(row: pd.Series) -> list[dict[str, Any]]:
             {
                 "reason": "Limited historical enforcement coverage relative to risk",
                 "evidence": f"{row['workforce_presence_band']} compared with TORI {row['final_tori_0_100']:.1f}.",
-                "support_level": "proxy",
+                "support_level": "modelled-estimate",
             }
         )
 
@@ -409,6 +451,27 @@ def build_mitigation_plan(row: pd.Series) -> list[dict[str, str]]:
                 "step": "Escalate to station-level priority because risk is high but historical enforcement presence is low.",
             }
         )
+    if row.get("emerging_hotspot_score_0_100", 0) >= 85:
+        plan.append(
+            {
+                "phase": "Emerging-risk audit",
+                "step": "Send one patrol pass to verify whether recent illegal-parking pressure is displacement from nearby enforcement.",
+            }
+        )
+    if row.get("hidden_hotspot_score_0_100", 0) >= 85:
+        plan.append(
+            {
+                "phase": "Hidden-hotspot check",
+                "step": "Inspect the zone even if raw counts are not top-ranked; exposure correction suggests under-covered risk.",
+            }
+        )
+    if row.get("time_window_reliability_score_0_100", 100) < 40:
+        plan.append(
+            {
+                "phase": "Evidence reliability",
+                "step": "Treat this as a coverage-risk window and collect validation observations before declaring the window low risk.",
+            }
+        )
     return plan
 
 
@@ -417,7 +480,8 @@ def make_officer_brief(row: pd.Series) -> str:
     return (
         f"{row['station']} | {TIME_BLOCK_LABELS.get(row['time_block'], row['time_block'])}: "
         f"{row['dominant_lane_issue']}. TORI {row['final_tori_0_100']:.1f}, "
-        f"lane-obstruction proxy {row['lane_obstruction_proxy_0_100']:.1f}, "
+        f"lane-obstruction estimate {row['lane_obstruction_proxy_0_100']:.1f}, "
+        f"persistence {row.get('hotspot_persistence_class', 'unclassified')}, "
         f"repeat pressure {row.get('repeat_pressure_score_0_100', 0):.1f}, "
         f"patrol gap {row.get('patrol_gap_score_0_100', 0):.1f}. "
         f"Recommended action: {row['recommended_action']}."
@@ -433,19 +497,24 @@ def build_roadspace_intelligence(
     """Build hotspot-level road-space intelligence records."""
     reasons = build_reason_aggregates(clean_df)
     frame = tori.merge(reasons, on=["grid_id_250m", "station", "time_block"], how="left")
-    plan_small = plan[
-        [
-            "station",
-            "time_block",
-            "centroid_lat",
-            "centroid_lon",
-            "recommended_action",
-            "reasoning",
-            "estimated_patrol_hours",
-            "estimated_tow_hours",
-            "enforcement_roi",
-        ]
-    ].copy()
+    plan_columns = [
+        "station",
+        "time_block",
+        "centroid_lat",
+        "centroid_lon",
+        "recommended_action",
+        "reasoning",
+        "estimated_patrol_hours",
+        "estimated_tow_hours",
+        "enforcement_roi",
+        "station_priority_zone_count",
+        "station_high_priority_zone_count",
+        "station_patrol_hours_total",
+        "station_tow_hours_total",
+        "station_enforcement_load_score_0_100",
+        "station_load_band",
+    ]
+    plan_small = plan[[col for col in plan_columns if col in plan.columns]].copy()
     plan_small["lat_key"] = plan_small["centroid_lat"].round(6)
     plan_small["lon_key"] = plan_small["centroid_lon"].round(6)
     frame["lat_key"] = frame["centroid_lat"].round(6)
@@ -479,7 +548,7 @@ def build_roadspace_intelligence(
     frame["mitigation_plan"] = frame.apply(build_mitigation_plan, axis=1)
     frame["officer_brief"] = frame.apply(make_officer_brief, axis=1)
     frame["exact_location_note"] = (
-        "Exact centroid from violation coordinates; lane geometry is a road-space proxy, not surveyed lane GIS."
+        "Exact centroid from violation coordinates; lane geometry is an inferred road-space estimate, not surveyed lane GIS."
     )
     frame["signal_health_status"] = np.where(
         frame["signal_zebra_share_observed"] >= 0.03,
@@ -520,11 +589,34 @@ def build_roadspace_intelligence(
         "chronic_vehicle_pressure_0_100",
         "patrol_gap_score_0_100",
         "patrol_gap_band",
+        "confidence_adjusted_priority_0_100",
+        "emerging_hotspot_score_0_100",
+        "hidden_hotspot_score_0_100",
+        "hidden_hotspot_flag",
+        "recent_violation_rate",
+        "prior_violation_rate",
+        "recent_to_prior_pressure_ratio",
+        "hotspot_persistence_class",
+        "time_window_reliability_score_0_100",
+        "time_window_reliability_band",
+        "time_window_coverage_warning",
+        "station_recording_bias_score_0_100",
+        "station_recording_bias_band",
+        "repeat_vehicle_movement_score_0_100",
+        "repeat_vehicle_movement_pattern",
+        "violation_text_severity_score_0_100",
+        "violation_text_severity_signature",
         "confidence_band",
         "recommended_action",
         "estimated_patrol_hours",
         "estimated_tow_hours",
         "enforcement_roi",
+        "station_priority_zone_count",
+        "station_high_priority_zone_count",
+        "station_patrol_hours_total",
+        "station_tow_hours_total",
+        "station_enforcement_load_score_0_100",
+        "station_load_band",
         "workforce_presence_proxy_0_100",
         "workforce_presence_band",
         "historical_workforce_proxy",
@@ -582,6 +674,21 @@ def build_lane_hotspots_geojson(frame: pd.DataFrame) -> dict[str, Any]:
             "chronic_vehicle_pressure_0_100": getattr(row, "chronic_vehicle_pressure_0_100", None),
             "patrol_gap_score_0_100": getattr(row, "patrol_gap_score_0_100", None),
             "patrol_gap_band": getattr(row, "patrol_gap_band", None),
+            "confidence_adjusted_priority_0_100": getattr(row, "confidence_adjusted_priority_0_100", None),
+            "emerging_hotspot_score_0_100": getattr(row, "emerging_hotspot_score_0_100", None),
+            "hidden_hotspot_score_0_100": getattr(row, "hidden_hotspot_score_0_100", None),
+            "hidden_hotspot_flag": getattr(row, "hidden_hotspot_flag", None),
+            "hotspot_persistence_class": getattr(row, "hotspot_persistence_class", None),
+            "time_window_reliability_score_0_100": getattr(row, "time_window_reliability_score_0_100", None),
+            "time_window_reliability_band": getattr(row, "time_window_reliability_band", None),
+            "station_recording_bias_score_0_100": getattr(row, "station_recording_bias_score_0_100", None),
+            "station_recording_bias_band": getattr(row, "station_recording_bias_band", None),
+            "repeat_vehicle_movement_score_0_100": getattr(row, "repeat_vehicle_movement_score_0_100", None),
+            "repeat_vehicle_movement_pattern": getattr(row, "repeat_vehicle_movement_pattern", None),
+            "violation_text_severity_score_0_100": getattr(row, "violation_text_severity_score_0_100", None),
+            "violation_text_severity_signature": getattr(row, "violation_text_severity_signature", None),
+            "station_enforcement_load_score_0_100": getattr(row, "station_enforcement_load_score_0_100", None),
+            "station_load_band": getattr(row, "station_load_band", None),
             "bottleneck_class": getattr(row, "bottleneck_class", None),
             "junction_sensitivity_band": getattr(row, "junction_sensitivity_band", None),
             "corridor_name": getattr(row, "corridor_name", None),
