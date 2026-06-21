@@ -229,6 +229,29 @@ Dashboard pages:
 - Deployment Simulator
 - Methodology
 
+### Netlify Demo Deployment
+
+This repo includes `netlify.toml`, so Netlify can build directly from GitHub.
+
+Use these Netlify settings:
+
+| Setting | Value |
+|---|---|
+| Base directory | repository root |
+| Build command | `cd frontend && npm ci && npm run build` |
+| Publish directory | `frontend/dist` |
+| Node version | `18` |
+
+After Netlify creates the site, add the generated domain to the MapMyIndia /
+Mappls web key allowlist, for example:
+
+```text
+your-site-name.netlify.app
+```
+
+For a quick drag-and-drop deploy, run `npm run build` inside `frontend` and
+upload the generated `frontend/dist` folder to Netlify Drop.
+
 ### Maps and WebGL fallback
 
 The Command Center and Hotspot Intelligence maps render a **MapMyIndia / Mappls
