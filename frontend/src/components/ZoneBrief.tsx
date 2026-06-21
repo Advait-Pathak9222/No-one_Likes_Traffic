@@ -45,7 +45,17 @@ function urgencyText(plan: EnforcementPlanRow): string {
   return `Planned: within ${compactNumber(sla)} min`;
 }
 
+function reasonPoints(text?: string, limit = 4): string[] {
+  if (!text) return [];
+  return text
+    .split(';')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .slice(0, limit);
+}
+
 export function ZoneBrief({ plan, roadspace }: ZoneBriefProps) {
+  const proofPoints = reasonPoints(plan.reasoning);
   return (
     <article className="zone-brief" id="print-root">
       <header className="brief-header">
@@ -66,32 +76,53 @@ export function ZoneBrief({ plan, roadspace }: ZoneBriefProps) {
         {roadspace?.bottleneck_class && <span className="brief-chip">{roadspace.bottleneck_class}</span>}
       </div>
 
-      <div className="brief-metrics officer">
-        <div><span>Action</span><strong>{officerActionText(plan.recommended_action)}</strong></div>
-        <div><span>When</span><strong>{plan.best_time_window}</strong></div>
-        <div><span>Urgency</span><strong>{urgencyText(plan)}</strong></div>
-        <div><span>Resource needed</span><strong>{resourceText(plan)}</strong></div>
-        <div><span>Main reason</span><strong>{roadspace?.dominant_lane_issue ?? plan.reasoning}</strong></div>
-        <div><span>Expected benefit</span><strong>{recoveryRange(plan)}</strong></div>
-      </div>
+      <ol className="field-order">
+        <li>
+          <span>Go to</span>
+          <strong>{plan.zone_name}</strong>
+          <small>{plan.police_station} · centroid {oneDecimal(plan.centroid_lat)}, {oneDecimal(plan.centroid_lon)}</small>
+        </li>
+        <li>
+          <span>Act during</span>
+          <strong>{plan.best_time_window}</strong>
+          <small>{urgencyText(plan)}</small>
+        </li>
+        <li>
+          <span>Use</span>
+          <strong>{resourceText(plan)}</strong>
+          <small>{officerActionText(plan.recommended_action)}</small>
+        </li>
+        <li>
+          <span>Why</span>
+          <strong>{roadspace?.dominant_lane_issue ?? proofPoints[0] ?? 'Recurring illegal-parking pressure'}</strong>
+          <small>{plan.confidence_band} confidence · expected benefit {recoveryRange(plan)}</small>
+        </li>
+      </ol>
 
       {roadspace && (
         <section className="brief-section">
-          <h3>Road-space read</h3>
-          <p><strong>Lane context:</strong> {roadspace.lane_context}</p>
-          <p><strong>Dominant issue:</strong> {roadspace.dominant_lane_issue}</p>
-          {roadspace.junction_sensitivity_label && <p><strong>Junction sensitivity:</strong> {roadspace.junction_sensitivity_label}</p>}
-          {roadspace.corridor_name && (
-            <p>
-              <strong>Corridor:</strong> part of {roadspace.corridor_name}
-              {roadspace.corridor_linked_hotspots ? ` — ${roadspace.corridor_linked_hotspots} linked hotspots` : ''}
-              {roadspace.corridor_length_km ? `, ~${oneDecimal(roadspace.corridor_length_km)} km` : ''}
-            </p>
-          )}
-          {plan.violation_text_severity_signature && (
-            <p><strong>Violation severity signature:</strong> {plan.violation_text_severity_signature}</p>
-          )}
-          <p><strong>Confidence note:</strong> {plan.time_window_coverage_warning ?? `${plan.confidence_band} confidence field brief.`}</p>
+          <h3>Road-space proof</h3>
+          <ul className="brief-list compact-proof">
+            <li><strong>Lane context</strong><span>{roadspace.lane_context}</span></li>
+            <li><strong>Dominant issue</strong><span>{roadspace.dominant_lane_issue}</span></li>
+            {roadspace.junction_sensitivity_label && (
+              <li><strong>Junction sensitivity</strong><span>{roadspace.junction_sensitivity_label}</span></li>
+            )}
+            {roadspace.corridor_name && (
+              <li>
+                <strong>Corridor</strong>
+                <span>
+                  {roadspace.corridor_name}
+                  {roadspace.corridor_linked_hotspots ? ` · ${roadspace.corridor_linked_hotspots} linked hotspots` : ''}
+                  {roadspace.corridor_length_km ? ` · ~${oneDecimal(roadspace.corridor_length_km)} km` : ''}
+                </span>
+              </li>
+            )}
+            <li>
+              <strong>Evidence note</strong>
+              <span>{plan.time_window_coverage_warning ?? `${plan.confidence_band} confidence field brief.`}</span>
+            </li>
+          </ul>
         </section>
       )}
 

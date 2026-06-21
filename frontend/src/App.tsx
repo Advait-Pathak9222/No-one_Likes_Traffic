@@ -118,6 +118,71 @@ function plainWhy(plan: EnforcementPlanRow, roadspace?: RoadspaceHotspot): strin
   return 'Recurring illegal-parking pressure is likely to affect usable road space in this area.';
 }
 
+function reasonPoints(text?: string, limit = 3): string[] {
+  if (!text) return [];
+  return text
+    .split(';')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .slice(0, limit);
+}
+
+type ActionStep = {
+  label: string;
+  title: string;
+  body?: string;
+};
+
+function NumberedActionGrid({ steps, compact = false }: { steps: ActionStep[]; compact?: boolean }) {
+  return (
+    <div className={`numbered-action-grid ${compact ? 'compact' : ''}`}>
+      {steps.map((step, index) => (
+        <div className="numbered-action" key={`${step.label}-${index}`}>
+          <span>{index + 1}</span>
+          <div>
+            <small>{step.label}</small>
+            <strong>{step.title}</strong>
+            {step.body && <p>{step.body}</p>}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function JourneyStrip() {
+  const steps = [
+    { title: 'Rank', body: 'Find the first zones to clear.' },
+    { title: 'Brief', body: 'Give station-wise instructions.' },
+    { title: 'Dispatch', body: 'Send patrol/tow with a reason.' },
+    { title: 'Record', body: 'Feed closure status back later.' }
+  ];
+  return (
+    <div className="journey-strip" aria-label="Officer workflow">
+      {steps.map((step, index) => (
+        <div className="journey-step" key={step.title}>
+          <span>{index + 1}</span>
+          <div>
+            <strong>{step.title}</strong>
+            <small>{step.body}</small>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ProofList({ points }: { points: string[] }) {
+  if (points.length === 0) return null;
+  return (
+    <ol className="proof-list">
+      {points.map((point, index) => (
+        <li key={`${point}-${index}`}>{point}</li>
+      ))}
+    </ol>
+  );
+}
+
 type MapFeature = HotspotFeature | LaneHotspotFeature;
 
 function mapProps(feature: MapFeature) {
@@ -272,14 +337,31 @@ function CommandCenter({
 
   return (
     <section className="page-grid">
+      <JourneyStrip />
       <div className="simple-command-strip">
         <article className="radio-card command-first-card">
           <span className="ops-label">First action now</span>
           <h2>{officerActionText(selectedPlan.recommended_action)}</h2>
-          <p>
-            <strong>{selectedPlan.zone_name}</strong> · {selectedPlan.police_station} · {selectedPlan.best_time_window}
-          </p>
-          <p>{plainWhy(selectedPlan)}</p>
+          <NumberedActionGrid
+            steps={[
+              {
+                label: 'Go to',
+                title: selectedPlan.zone_name,
+                body: `${selectedPlan.police_station} · ${selectedPlan.best_time_window}`
+              },
+              {
+                label: 'Do this',
+                title: officerActionText(selectedPlan.recommended_action),
+                body: resourceText(selectedPlan)
+              },
+              {
+                label: 'Why now',
+                title: plainWhy(selectedPlan),
+                body: `${urgencyText(selectedPlan)} · ${selectedPlan.confidence_band} confidence`
+              }
+            ]}
+            compact
+          />
           <button type="button" onClick={() => onSelect(selectedPlan.zone_id)}>Open field brief</button>
         </article>
         <div className="simple-status-cards">
@@ -688,11 +770,26 @@ function LiveOpsBrief({ data, onSelect }: { data: ParkPulseData; onSelect: (zone
           <h2>{firstRow ? `Send first unit to ${firstRow.zone_name}` : 'No active hotspot selected'}</h2>
           {firstRow && (
             <>
-              <p>
-                {firstRow.police_station}: <strong>{officerActionText(firstRow.recommended_action)}</strong> during{' '}
-                <strong>{firstRow.best_time_window}</strong>. {urgencyText(firstRow)}.
-              </p>
-              <p className="reason-large">{firstRow.reasoning}</p>
+              <NumberedActionGrid
+                steps={[
+                  {
+                    label: 'Station',
+                    title: firstRow.police_station,
+                    body: `${firstRow.best_time_window} · ${urgencyText(firstRow)}`
+                  },
+                  {
+                    label: 'Instruction',
+                    title: officerActionText(firstRow.recommended_action),
+                    body: resourceText(firstRow)
+                  },
+                  {
+                    label: 'Reason',
+                    title: plainWhy(firstRow),
+                    body: `${firstRow.confidence_band} confidence`
+                  }
+                ]}
+                compact
+              />
               <button type="button" onClick={() => onSelect(firstRow.zone_id)}>Open hotspot intelligence</button>
             </>
           )}
@@ -735,10 +832,10 @@ function LiveOpsBrief({ data, onSelect }: { data: ParkPulseData; onSelect: (zone
             <p>Designed for a duty officer who has no time to inspect tables.</p>
           </div>
           <ol className="runbook">
-            <li>Dispatch first unit to the highest operational-priority, high-confidence hotspot.</li>
-            <li>If action contains tow, reserve tow capacity before patrol arrival.</li>
-            <li>If spillback risk is high, clear junction-mouth and kerb-lane obstruction before issuing routine challans.</li>
-            <li>After the window, mark the hotspot as cleared, unchanged, or shifted nearby.</li>
+            <li>Open the first hotspot brief and confirm the exact location on the map.</li>
+            <li>Send the listed patrol or tow resource in the recommended time window.</li>
+            <li>Clear the obstruction first; routine challans come after road space is restored.</li>
+            <li>At shift end, record cleared, unchanged, or shifted nearby so the next brief improves.</li>
           </ol>
         </article>
       </div>
@@ -1075,12 +1172,28 @@ function OperationalIntelligenceReport({
       />
       <article className="intel-hero simple-intel-hero">
         <div>
-          <span className="ops-label">Officer proof layer</span>
-          <h2>Read every metric as: what is happening, why it matters, what to do next.</h2>
-          <p>
-            The technical names stay unchanged for the presentation, but each card now explains the metric in plain language.
-            Scores near 80-100 usually mean “act or verify now”; lower scores usually mean “watch or audit.”
-          </p>
+          <span className="ops-label">Model explanation layer</span>
+          <h2>Use this page to audit why a hotspot was prioritised.</h2>
+          <NumberedActionGrid
+            steps={[
+              {
+                label: 'Purpose',
+                title: 'For commanders, reviewers and judges',
+                body: 'Daily field dispatch should start from Command Center or Live Ops Brief.'
+              },
+              {
+                label: 'How to read',
+                title: 'Each signal answers one plain question',
+                body: 'What is rising, repeating, under-covered, severe or reliable?'
+              },
+              {
+                label: 'Decision rule',
+                title: 'High scores mean act or verify first',
+                body: 'Low scores usually mean watch, audit or wait for stronger evidence.'
+              }
+            ]}
+            compact
+          />
         </div>
         <div className="intel-hero-stats">
           <div><strong>{compactNumber(rows.length)}</strong><span>filtered priority rows</span></div>
@@ -1329,38 +1442,34 @@ function HotspotIntelligence({
           <h2>{selectedPlan.zone_name}</h2>
           <p className="brief-location">{selectedPlan.police_station} · {selectedPlan.best_time_window}</p>
 
-          <div className="officer-action-banner">
-            <div>
-              <span>Recommended action</span>
-              <strong>{officerActionText(selectedPlan.recommended_action)}</strong>
-            </div>
-            <div>
-              <span>Response urgency</span>
-              <strong>{urgencyText(selectedPlan)}</strong>
-            </div>
-          </div>
+          <NumberedActionGrid
+            steps={[
+              {
+                label: 'Go to',
+                title: selectedPlan.zone_name,
+                body: `Centroid ${oneDecimal(selectedPlan.centroid_lat)}, ${oneDecimal(selectedPlan.centroid_lon)}`
+              },
+              {
+                label: 'Act during',
+                title: selectedPlan.best_time_window,
+                body: `${selectedPlan.time_window_reliability_band ?? 'Usable time-window evidence'} · ${urgencyText(selectedPlan)}`
+              },
+              {
+                label: 'Use',
+                title: resourceText(selectedPlan),
+                body: officerActionText(selectedPlan.recommended_action)
+              },
+              {
+                label: 'Reason',
+                title: plainWhy(selectedPlan, roadspace),
+                body: `${selectedPlan.confidence_band} confidence · ${selectedPlan.clearance_decision_band ?? 'Use shift judgement'}`
+              }
+            ]}
+          />
 
-          <div className="officer-brief-grid">
-            <div>
-              <span>Where</span>
-              <strong>{selectedPlan.zone_name}</strong>
-              <small>Centroid {oneDecimal(selectedPlan.centroid_lat)}, {oneDecimal(selectedPlan.centroid_lon)}</small>
-            </div>
-            <div>
-              <span>When</span>
-              <strong>{selectedPlan.best_time_window}</strong>
-              <small>{selectedPlan.time_window_reliability_band ?? 'Usable time-window evidence'}</small>
-            </div>
-            <div>
-              <span>Resource</span>
-              <strong>{resourceText(selectedPlan)}</strong>
-              <small>{selectedPlan.clearance_decision_band ?? 'Use shift judgement'}</small>
-            </div>
-            <div>
-              <span>Why this matters</span>
-              <strong>{plainWhy(selectedPlan, roadspace)}</strong>
-              <small>{selectedPlan.reasoning}</small>
-            </div>
+          <div className="proof-card">
+            <span>Proof points</span>
+            <ProofList points={reasonPoints(selectedPlan.reasoning, 4)} />
           </div>
 
           {roadspace?.corridor_name && (
@@ -1531,12 +1640,17 @@ function DeploymentSimulator({ rows }: { rows: EnforcementPlanRow[] }) {
 
   return (
     <section className="stack">
-      <PageTitle title="What-If Deployment Simulator" subtitle="Test limited patrol and tow capacity against the priority queue and recovery potential." />
+      <PageTitle title="What-If Deployment Simulator" subtitle="Set today's resources, see coverage, then dispatch the selected list." />
+      <div className="sim-flow">
+        <div><span>1</span><strong>Choose units</strong><small>Patrol, tow, station and time window.</small></div>
+        <div><span>2</span><strong>Check coverage</strong><small>See how much priority risk can be covered.</small></div>
+        <div><span>3</span><strong>Send list</strong><small>Use selected hotspots as the deployment order.</small></div>
+      </div>
       <div className="simulator">
         <div className="control-panel">
-          <label>Patrol units <input type="range" min="1" max="30" value={patrolUnits} onChange={(e) => setPatrolUnits(Number(e.target.value))} /></label>
+          <label>1. Patrol units <input type="range" min="1" max="30" value={patrolUnits} onChange={(e) => setPatrolUnits(Number(e.target.value))} /></label>
           <strong>{patrolUnits}</strong>
-          <label>Tow vehicles <input type="range" min="0" max="15" value={towUnits} onChange={(e) => setTowUnits(Number(e.target.value))} /></label>
+          <label>2. Tow vehicles <input type="range" min="0" max="15" value={towUnits} onChange={(e) => setTowUnits(Number(e.target.value))} /></label>
           <strong>{towUnits}</strong>
           <select value={station} onChange={(e) => setStation(e.target.value)}>{stations.map((item) => <option key={item}>{item}</option>)}</select>
           <select value={timeWindow} onChange={(e) => setTimeWindow(e.target.value)}>{windows.map((item) => <option key={item}>{item}</option>)}</select>
@@ -1553,13 +1667,25 @@ function DeploymentSimulator({ rows }: { rows: EnforcementPlanRow[] }) {
               hint="Patrol-hours / tow-hours consumed out of the available budget." />
           </div>
           <div className="coverage-bar"><span style={{ width: `${Math.min(100, recoveryCoverage * 100)}%` }} /></div>
-          <p className="method-copy">
-            With {patrolUnits} patrol units and {towUnits} tow vehicles, ParkPulse can cover {percentage(recoveryCoverage)} of filtered
-            lane-recovery potential, equivalent to {compactNumber(recoveredMinutes)} recoverable lane-minutes in the target window.
-          </p>
-          <p className="method-copy">
-            The same deployment also covers {percentage(riskCoverage)} of filtered obstruction-priority risk.
-          </p>
+          <NumberedActionGrid
+            steps={[
+              {
+                label: 'Resource setting',
+                title: `${patrolUnits} patrol units and ${towUnits} tow vehicles`,
+                body: `${compactNumber(selected.length)} hotspots fit inside this budget.`
+              },
+              {
+                label: 'Coverage',
+                title: `${percentage(recoveryCoverage)} of filtered lane-recovery estimate`,
+                body: `${compactNumber(recoveredMinutes)} recoverable lane-minutes in the target window.`
+              },
+              {
+                label: 'Priority risk',
+                title: `${percentage(riskCoverage)} of filtered obstruction-priority risk`,
+                body: 'Use this to see what remains uncovered after the first wave.'
+              }
+            ]}
+          />
         </div>
       </div>
       <PriorityMiniList rows={selected.slice(0, 8)} />

@@ -257,6 +257,163 @@ nav {
   gap: 20px;
 }
 
+.journey-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.journey-step,
+.sim-flow > div {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 13px 14px;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  box-shadow: 0 10px 22px rgba(23, 35, 55, 0.05);
+}
+
+.journey-step > span,
+.sim-flow span,
+.numbered-action > span {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: var(--soft-orange);
+  color: var(--orange);
+  font-weight: 1000;
+}
+
+.journey-step strong,
+.journey-step small,
+.sim-flow strong,
+.sim-flow small {
+  display: block;
+}
+
+.journey-step strong,
+.sim-flow strong {
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.journey-step small,
+.sim-flow small {
+  margin-top: 3px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.numbered-action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.numbered-action-grid.compact {
+  grid-template-columns: 1fr;
+  gap: 9px;
+  margin: 14px 0;
+}
+
+.numbered-action {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px;
+  border-radius: 18px;
+  background: #f8fbff;
+  border: 1px solid #dfe7f4;
+}
+
+.radio-card .numbered-action,
+.intel-hero .numbered-action {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.radio-card .numbered-action > span,
+.intel-hero .numbered-action > span {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+.numbered-action small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.radio-card .numbered-action small,
+.intel-hero .numbered-action small {
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.numbered-action strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.28;
+}
+
+.radio-card .numbered-action strong,
+.intel-hero .numbered-action strong {
+  color: #ffffff;
+}
+
+.numbered-action p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  line-height: 1.45;
+  font-size: 13px;
+}
+
+.radio-card .numbered-action p,
+.intel-hero .numbered-action p {
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.proof-card {
+  margin: 16px 0;
+  padding: 15px;
+  border-radius: 18px;
+  background: #fff9f4;
+  border: 1px solid rgba(251, 100, 27, 0.22);
+}
+
+.proof-card > span {
+  display: block;
+  color: var(--orange);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.proof-list {
+  margin: 10px 0 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 8px;
+  color: var(--ink);
+  line-height: 1.45;
+}
+
+.proof-list li::marker {
+  color: var(--orange);
+  font-weight: 900;
+}
+
 .page-title h1 {
   margin: 0;
   font-size: 28px;
@@ -814,6 +971,12 @@ tr:hover {
   gap: 18px;
 }
 
+.sim-flow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .zone-hero,
 .method-card,
 .control-panel,
@@ -1043,6 +1206,10 @@ tr:hover {
 .sim-output {
   display: grid;
   gap: 18px;
+}
+
+.sim-output .numbered-action-grid {
+  margin: 0;
 }
 
 .coverage-bar {
@@ -1762,8 +1929,19 @@ tr:hover {
     grid-template-columns: 1fr;
   }
 
+  .journey-strip,
+  .sim-flow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .simple-status-cards {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .numbered-action-grid,
+  .field-order,
+  .brief-list.compact-proof {
+    grid-template-columns: 1fr;
   }
 
   .readable-intel-grid,
@@ -2315,6 +2493,68 @@ tr:hover {
   line-height: 1.25;
 }
 
+.field-order {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  counter-reset: field-order;
+}
+
+.field-order li {
+  counter-increment: field-order;
+  position: relative;
+  padding: 14px 14px 14px 58px;
+  border-radius: 16px;
+  background: #f8fbff;
+  border: 1px solid #dfe7f4;
+  min-height: 108px;
+}
+
+.field-order li::before {
+  content: counter(field-order);
+  position: absolute;
+  left: 14px;
+  top: 14px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 11px;
+  background: var(--soft-orange);
+  color: var(--orange);
+  font-weight: 1000;
+}
+
+.field-order span,
+.field-order strong,
+.field-order small {
+  display: block;
+}
+
+.field-order span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.field-order strong {
+  margin-top: 4px;
+  color: var(--ink);
+  font-size: 17px;
+  line-height: 1.25;
+}
+
+.field-order small {
+  margin-top: 6px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
 .brief-section h3 {
   margin: 0 0 8px;
   font-size: 15px;
@@ -2345,6 +2585,25 @@ tr:hover {
   display: block;
   color: var(--muted);
   font-size: 13px;
+}
+
+.brief-list.compact-proof {
+  padding-left: 0;
+  list-style: none;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.brief-list.compact-proof li {
+  padding: 12px;
+  border-radius: 14px;
+  background: #fbfdff;
+  border: 1px solid var(--line);
+}
+
+.brief-list.compact-proof strong {
+  display: block;
+  color: var(--ink);
+  margin-bottom: 4px;
 }
 
 .brief-footer {

@@ -39,3 +39,6 @@ reports/
 reports/__pycache__/
 reports/~$*.pptx
 reports/Baibhav_Mohanty_Flipkart_Hilabs_Shortlisted__1743524410.pdf
+
+# Local Netlify folder
+.netlify
