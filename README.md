@@ -269,7 +269,7 @@ are for server-side keys and should be left blank for this browser dashboard.
 
 ## Acknowledgements
 
-ParkPulse stands on top of the official Flipkart Gridlock Round 2 ecosystem:
+ParkPulse stands on top of the official Flipkart GridLock Round 2 ecosystem:
 
 | Contribution | Acknowledgement |
 |---|---|

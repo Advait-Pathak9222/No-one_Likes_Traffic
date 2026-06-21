@@ -144,7 +144,7 @@ Bengaluru hotspots. Mock data is only for frontend demo resilience.
 ## Acknowledgements
 
 - Data source: Bengaluru Traffic Police / ASTraM enforcement records shared for
-  Flipkart Gridlock Round 2 Theme 1, **Poor Visibility on Parking-Induced
+  Flipkart GridLock Round 2 Theme 1, **Poor Visibility on Parking-Induced
   Congestion**.
 - Maps: MapMyIndia / Mappls web mapping services provide the geographic context
   layer where the key is active.

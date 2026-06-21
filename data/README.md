@@ -2,7 +2,7 @@
 
 Raw police violation data is not committed here.
 
-The Theme 1 enforcement dataset was provided through the Flipkart Gridlock
+The Theme 1 enforcement dataset was provided through the Flipkart GridLock
 Round 2 problem statement by Bengaluru Traffic Police / ASTraM. ParkPulse uses
 that dataset to derive hotspot rankings, operational risk estimates and
 deployment recommendations.
