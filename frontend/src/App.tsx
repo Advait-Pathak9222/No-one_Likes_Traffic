@@ -197,22 +197,17 @@ function App() {
 }
 
 function Header({ error, data }: { error: string | null; data: ParkPulseData }) {
-  const m = data.metrics;
   return (
     <section className="hero-panel">
       <div className="hero-text">
         <p className="eyebrow">Bengaluru Traffic Police · Poor Visibility on Parking-Induced Congestion</p>
         <h1>ParkPulse Bengaluru</h1>
         <p className="hero-subtitle">
-          Illegal-parking impact intelligence — prioritising where, when and how enforcement recovers the most road capacity.
+          A simple enforcement console: where to go, when to go, what action to take, and why.
         </p>
       </div>
       <div className="hero-side">
-        <div className="hero-stats">
-          <div><strong>{compactNumber(m.total_violations)}</strong><span>Violation records</span></div>
-          <div><strong>{compactNumber(m.total_hotspots)}</strong><span>Hotspot cells</span></div>
-          <div><strong>{percentage(m.capture_at_20)}</strong><span>Recurrence Capture@20</span></div>
-        </div>
+        <div className="hero-action">Officer-ready view</div>
         {error && <div className="mock-badge">Fallback data active</div>}
       </div>
     </section>
@@ -253,7 +248,7 @@ function Sidebar({
       <div className="sidebar-note">
         <Info size={16} />
         <span>
-          Theme: Poor Visibility on Parking-Induced Congestion. ParkPulse separates recurrence prediction from operational impact; traffic-flow outputs are modelled estimates.
+          Built for clear instructions. Traffic-flow numbers are decision-support estimates, not live speed measurements.
         </span>
       </div>
       {usingMockData && <div className="sidebar-warning">Using mock fallback data</div>}
@@ -270,38 +265,32 @@ function CommandCenter({
   selectedPlan: EnforcementPlanRow;
   onSelect: (zoneId: string) => void;
 }) {
-  const topStation = useMemo(() => {
-    return [...data.stationSummary].sort((a, b) => b.high_impact_hotspots - a.high_impact_hotspots)[0];
-  }, [data.stationSummary]);
-
-  const recoverySub = useMemo(() => {
-    const low = data.metrics.top20_lane_recovery_minutes_low;
-    const high = data.metrics.top20_lane_recovery_minutes_high;
-    if (low === null || low === undefined || high === null || high === undefined) return undefined;
-    return `range ${compactNumber(low)}–${compactNumber(high)} min`;
-  }, [data.metrics]);
-  const recurrenceSub = data.metrics.headline_recurrence_signal ?? 'Validated recurrence signal';
   const mapHotspots = data.laneHotspots.features.length > 0 ? data.laneHotspots.features : data.hotspots.features;
+  const firstRows = data.enforcementPlan.slice(0, 10);
+  const towCount = firstRows.filter((row) => row.recommended_action.toLowerCase().includes('tow')).length;
+  const highConfidenceCount = firstRows.filter((row) => row.confidence_band === 'High').length;
 
   return (
     <section className="page-grid">
-      <div className="kpi-grid auto">
-        <KpiCard label="Recurrence Capture@20" value={percentage(data.metrics.headline_recurrence_capture_at_20)} sub={recurrenceSub} icon={BarChart3} accent
-          hint="Best validated recurrence signal at top-20. This predicts where obstruction pressure is likely to recur; TORI is used after that to explain severity and action." />
-        <KpiCard label="Top-20 Lane Recovery" value={`${compactNumber(data.metrics.top20_lane_recovery_minutes)} min`} sub={recoverySub} icon={Navigation}
-          hint="ELRM: estimated running-lane minutes recovered if the top-20 zones are actioned in their target windows (low–high range from enforcement effectiveness). A modelled estimate, not measured travel-time." />
-        <KpiCard label="High Spillback Zones" value={compactNumber(data.metrics.high_spillback_risk_zones)} icon={AlertTriangle}
-          hint="Recommended zones whose inferred queue-spillback risk is high enough to threaten nearby junction flow." />
-        <KpiCard label="Chronic Repeat Zones" value={compactNumber(data.metrics.chronic_repeat_priority_zones)} icon={Car}
-          hint="Priority zones where anonymized vehicle ids recur strongly enough to indicate chronic parking pressure." />
-        <KpiCard label="Emerging / Hidden" value={`${compactNumber(data.metrics.emerging_priority_zones)}/${compactNumber(data.metrics.hidden_hotspot_candidates)}`} icon={ShieldCheck}
-          hint="Emerging zones show recent pressure growth; hidden candidates remain risky after correcting for station recording exposure." />
-        <KpiCard label="Median Clearance SLA" value={`${compactNumber(data.metrics.median_clearance_sla_minutes)} min`} icon={Zap}
-          hint="Median response deadline assigned by spillback, capacity-loss, repeat pressure, and patrol-gap urgency." />
+      <div className="simple-command-strip">
+        <article className="radio-card command-first-card">
+          <span className="ops-label">First action now</span>
+          <h2>{officerActionText(selectedPlan.recommended_action)}</h2>
+          <p>
+            <strong>{selectedPlan.zone_name}</strong> · {selectedPlan.police_station} · {selectedPlan.best_time_window}
+          </p>
+          <p>{plainWhy(selectedPlan)}</p>
+          <button type="button" onClick={() => onSelect(selectedPlan.zone_id)}>Open field brief</button>
+        </article>
+        <div className="simple-status-cards">
+          <SummaryItem label="First-wave zones" value={compactNumber(firstRows.length)} />
+          <SummaryItem label="Need tow support" value={compactNumber(towCount)} />
+          <SummaryItem label="High confidence" value={compactNumber(highConfidenceCount)} />
+        </div>
       </div>
 
       <div className="command-layout">
-        <ChartCard title="City Corridor Risk Map" subtitle="Inferred corridor obstruction risk, built from violation data. Click a hotspot to open its brief.">
+        <ChartCard title="Where to act" subtitle="Click a hotspot to open a simple field brief. Red corridors need the earliest attention.">
           <RiskMap
             segments={data.congestionSegments}
             hotspots={mapHotspots}
@@ -312,14 +301,7 @@ function CommandCenter({
             }
           />
         </ChartCard>
-        <TopPriorityPanel rows={data.enforcementPlan.slice(0, 10)} onSelect={onSelect} />
-      </div>
-
-      <div className="summary-strip">
-        <SummaryItem label="Busiest station" value={topStation?.police_station ?? '—'} />
-        <SummaryItem label="Its peak window" value={topStation?.peak_time_window ?? '—'} />
-        <SummaryItem label="Patrol-gap zones" value={compactNumber(data.metrics.patrol_gap_priority_zones)} />
-        <SummaryItem label="Low-reliability windows" value={compactNumber(data.metrics.low_reliability_priority_zones)} />
+        <TopPriorityPanel rows={firstRows} onSelect={onSelect} />
       </div>
     </section>
   );
@@ -613,8 +595,8 @@ function TopPriorityPanel({ rows, onSelect }: { rows: EnforcementPlanRow[]; onSe
   return (
     <aside className="priority-panel">
       <div className="panel-heading">
-        <h2>Top 10 Enforcement Priorities</h2>
-        <p>Ranked by operational priority: recurrence, capacity pressure, spillback and recoverable lane-minutes.</p>
+        <h2>Next actions</h2>
+        <p>Simple dispatch list for the first enforcement wave.</p>
       </div>
       <div className="priority-list">
         {rows.map((row) => (
@@ -623,11 +605,10 @@ function TopPriorityPanel({ rows, onSelect }: { rows: EnforcementPlanRow[]; onSe
             <span className="zone">
               <strong>{row.zone_name}</strong>
               <small>{row.police_station} · {row.best_time_window}</small>
-              <small>{row.hotspot_persistence_class ?? 'Recurring watchlist'} · {row.time_window_reliability_band ?? 'Evidence pending'}</small>
-              <small>Emerging {oneDecimal(row.emerging_hotspot_score_0_100)} · Hidden {oneDecimal(row.hidden_hotspot_score_0_100)}</small>
+              <small>{urgencyText(row)} · {row.confidence_band} confidence</small>
             </span>
             <ActionChip action={row.recommended_action} />
-            <strong className="score">{oneDecimal(row.operational_priority_score_0_100 ?? row.final_priority_score)}</strong>
+            <strong className="score">Open</strong>
           </button>
         ))}
       </div>
@@ -669,11 +650,6 @@ function LiveOpsBrief({ data, onSelect }: { data: ParkPulseData; onSelect: (zone
     )
     .slice(0, 8);
   const firstRow = criticalRows[0] ?? data.enforcementPlan[0];
-  const patrolHours = criticalRows.reduce((sum, row) => sum + row.estimated_patrol_hours, 0);
-  const towHours = criticalRows.reduce((sum, row) => sum + row.estimated_tow_hours, 0);
-  const towZones = filtered.filter((row) => row.recommended_action.toLowerCase().includes('tow')).slice(0, 4);
-  const chronicZones = filtered.filter((row) => (row.repeat_pressure_score_0_100 ?? 0) >= 85).slice(0, 4);
-  const patrolGapZones = filtered.filter((row) => (row.patrol_gap_score_0_100 ?? 0) >= 85).slice(0, 4);
   const stationWaves = useMemo(() => {
     const groups = new globalThis.Map<string, EnforcementPlanRow[]>();
     filtered.forEach((row) => {
@@ -695,7 +671,7 @@ function LiveOpsBrief({ data, onSelect }: { data: ParkPulseData; onSelect: (zone
     <section className="stack">
       <PageTitle
         title="Live Ops Brief"
-        subtitle="A chaos-mode view for duty officers: dispatch order, radio message, tow needs, and escalation triggers."
+        subtitle="A simple shift brief: first action, station wave, and field runbook."
       />
       <div className="filter-bar ops-filter">
         <select value={timeWindow} onChange={(event) => setTimeWindow(event.target.value)}>
@@ -713,21 +689,18 @@ function LiveOpsBrief({ data, onSelect }: { data: ParkPulseData; onSelect: (zone
           {firstRow && (
             <>
               <p>
-                {firstRow.police_station}: execute <strong>{actionLabel(firstRow.recommended_action)}</strong> during{' '}
-                <strong>{firstRow.best_time_window}</strong>. Spillback {oneDecimal(firstRow.queue_spillback_risk_0_100)},
-                SLA {compactNumber(firstRow.clearance_sla_minutes)} min, recovery {compactNumber(firstRow.estimated_lane_recovery_minutes)} lane-min.
+                {firstRow.police_station}: <strong>{officerActionText(firstRow.recommended_action)}</strong> during{' '}
+                <strong>{firstRow.best_time_window}</strong>. {urgencyText(firstRow)}.
               </p>
               <p className="reason-large">{firstRow.reasoning}</p>
               <button type="button" onClick={() => onSelect(firstRow.zone_id)}>Open hotspot intelligence</button>
             </>
           )}
         </article>
-
-        <div className="ops-kpis">
-          <KpiCard label="Critical Hotspots" value={compactNumber(criticalRows.length)} icon={AlertTriangle} />
-          <KpiCard label="Patrol Hours" value={oneDecimal(patrolHours)} icon={ShieldCheck} />
-          <KpiCard label="Tow Hours" value={oneDecimal(towHours)} icon={Truck} />
-          <KpiCard label="Chronic / Gap Zones" value={`${chronicZones.length}/${patrolGapZones.length}`} icon={Target} />
+        <div className="simple-status-cards vertical">
+          <SummaryItem label="Actions in this view" value={compactNumber(criticalRows.length)} />
+          <SummaryItem label="First station" value={firstRow?.police_station ?? '—'} />
+          <SummaryItem label="First time window" value={firstRow?.best_time_window ?? '—'} />
         </div>
       </div>
 
@@ -756,18 +729,6 @@ function LiveOpsBrief({ data, onSelect }: { data: ParkPulseData; onSelect: (zone
           </div>
         </article>
 
-        <article className="ops-card">
-          <div className="card-heading">
-            <h2>Escalation Triggers</h2>
-            <p>Repeat offenders and under-covered hotspots that need command attention.</p>
-          </div>
-          <div className="trigger-list">
-            <TriggerCard title="Tow queue risk" rows={towZones} fallback="No tow-heavy zone in this filter." onSelect={onSelect} />
-            <TriggerCard title="Chronic repeat pressure" rows={chronicZones} fallback="No chronic repeat zone in this filter." onSelect={onSelect} />
-            <TriggerCard title="Patrol-gap coverage" rows={patrolGapZones} fallback="No patrol-gap zone in this filter." onSelect={onSelect} />
-          </div>
-        </article>
-
         <article className="ops-card runbook-card">
           <div className="card-heading">
             <h2>Five-Minute Runbook</h2>
@@ -777,9 +738,7 @@ function LiveOpsBrief({ data, onSelect }: { data: ParkPulseData; onSelect: (zone
             <li>Dispatch first unit to the highest operational-priority, high-confidence hotspot.</li>
             <li>If action contains tow, reserve tow capacity before patrol arrival.</li>
             <li>If spillback risk is high, clear junction-mouth and kerb-lane obstruction before issuing routine challans.</li>
-            <li>Hold lower-recovery patrol zones until wave-1 clearance is confirmed.</li>
-            <li>If repeat pressure is high, record repeat-vehicle follow-up separately from routine challans.</li>
-            <li>After the window, mark recurrence as reduced, unchanged, or displaced.</li>
+            <li>After the window, mark the hotspot as cleared, unchanged, or shifted nearby.</li>
           </ol>
         </article>
       </div>
@@ -822,13 +781,14 @@ function TriggerCard({
 
 type IntelligenceMetric = {
   title: string;
+  question: string;
   primary: string;
   primaryLabel: string;
   score: string;
   scoreLabel: string;
-  role: string;
-  action: string;
-  chart: ChartPoint[];
+  plainMeaning: string;
+  officerUse: string;
+  watchFor: string;
   examples: EnforcementPlanRow[];
   icon: React.ElementType;
   tone: 'blue' | 'orange' | 'green' | 'purple' | 'slate';
@@ -916,6 +876,24 @@ function OperationalIntelligenceReport({
     });
   }, [data.enforcementPlan, priorityOnly, station, timeWindow]);
 
+  const recurringCount = countWhere(rows, (row) =>
+    ['Chronic hotspot', 'Time-window persistent', 'Recurring watchlist', 'Emerging hotspot'].includes(
+      row.hotspot_persistence_class ?? ''
+    )
+  );
+  const repeatHeavyCount = countWhere(
+    rows,
+    (row) =>
+      numericField(row, 'repeat_pressure_score_0_100') >= 75 ||
+      numericField(row, 'repeat_vehicle_movement_score_0_100') >= 75
+  );
+  const highConfidenceCount = countWhere(rows, (row) => row.confidence_band === 'High');
+  const visibilityCheckedCount = countWhere(
+    rows,
+    (row) =>
+      numericField(row, 'station_recording_bias_score_0_100') >= 60 ||
+      numericField(row, 'patrol_gap_score_0_100') >= 40
+  );
   const metrics = useMemo<IntelligenceMetric[]>(() => {
     const total = rows.length;
     const emergingCount = countWhere(rows, (row) => numericField(row, 'emerging_hotspot_score_0_100') >= 85);
@@ -934,65 +912,70 @@ function OperationalIntelligenceReport({
     return [
       {
         title: '1. Emerging Hotspot Index',
+        question: 'Is this location getting worse recently?',
         primary: compactNumber(emergingCount),
-        primaryLabel: `${percentText(emergingCount, total)} of filtered zones`,
+        primaryLabel: `${percentText(emergingCount, total)} fast-rising zones`,
         score: oneDecimal(meanField(rows, 'emerging_hotspot_score_0_100')),
-        scoreLabel: 'avg growth signal',
-        role: 'Detects zones where recent violation pressure is rising faster than the earlier baseline.',
-        action: 'Send an early audit or short fixed-window patrol before the zone becomes chronic.',
-        chart: scoreBandDistribution(rows, 'emerging_hotspot_score_0_100'),
+        scoreLabel: 'average rise signal',
+        plainMeaning: 'Recent parking pressure is higher than the earlier pattern for this location.',
+        officerUse: 'Send a quick audit or short fixed-window patrol before the hotspot becomes chronic.',
+        watchFor: 'High score + low past coverage means a hidden problem may be forming.',
         examples: topRows(rows, 'emerging_hotspot_score_0_100'),
         icon: Zap,
         tone: 'orange'
       },
       {
         title: '2. Station Recording Bias Score',
+        question: 'Is this hotspot truly risky, or just recorded more often?',
         primary: compactNumber(biasedCount),
-        primaryLabel: `${percentText(biasedCount, total)} high-exposure rows`,
+        primaryLabel: `${percentText(biasedCount, total)} high-visibility rows`,
         score: oneDecimal(meanField(rows, 'station_recording_bias_score_0_100')),
-        scoreLabel: 'avg exposure score',
-        role: 'Separates true hotspot pressure from places that look busy because they are already recorded heavily.',
-        action: 'Use exposure-adjusted ranking before allocating scarce tow or patrol capacity.',
-        chart: countDistribution(rows, (row) => row.station_recording_bias_band),
+        scoreLabel: 'average visibility score',
+        plainMeaning: 'Some areas look worse because officers or devices already record there frequently.',
+        officerUse: 'Compare with exposure-adjusted ranking before sending scarce patrol or tow resources.',
+        watchFor: 'High visibility does not mean ignore it; it means verify impact before over-allocating.',
         examples: topRows(rows, 'station_recording_bias_score_0_100'),
         icon: ShieldCheck,
         tone: 'blue'
       },
       {
         title: '3. Repeat Vehicle Movement Pattern',
+        question: 'Are the same vehicles causing repeated pressure?',
         primary: compactNumber(repeatMovementCount),
         primaryLabel: `${percentText(repeatMovementCount, total)} repeat-heavy rows`,
         score: oneDecimal(meanField(rows, 'repeat_vehicle_movement_score_0_100')),
-        scoreLabel: 'avg movement pressure',
-        role: 'Flags whether the pressure is local chronic parking or cross-station repeat movement.',
-        action: 'Convert repeat-heavy zones from routine challans into targeted repeat-offender follow-up.',
-        chart: countDistribution(rows, (row) => row.repeat_vehicle_movement_pattern),
+        scoreLabel: 'average repeat pressure',
+        plainMeaning: 'The same anonymised vehicles or movement patterns are appearing again and again.',
+        officerUse: 'Move from routine challans to targeted repeat-offender follow-up or towing.',
+        watchFor: 'Cross-station repeat movement can signal displacement from nearby enforcement.',
         examples: topRows(rows, 'repeat_vehicle_movement_score_0_100'),
         icon: Car,
         tone: 'purple'
       },
       {
         title: '4. Time-Window Reliability Score',
+        question: 'Can we trust this time-window signal?',
         primary: compactNumber(reliableCount),
-        primaryLabel: `${percentText(reliableCount, total)} usable-evidence rows`,
+        primaryLabel: `${percentText(reliableCount, total)} reliable windows`,
         score: oneDecimal(meanField(rows, 'time_window_reliability_score_0_100')),
-        scoreLabel: 'avg reliability',
-        role: 'Prevents sparse windows from being interpreted as true absence of traffic or parking pressure.',
-        action: 'Treat low-reliability windows as coverage warnings and verify before major deployment.',
-        chart: countDistribution(rows, (row) => row.time_window_reliability_band),
+        scoreLabel: 'average reliability',
+        plainMeaning: 'Checks whether a morning/night/evening window has enough records to support a decision.',
+        officerUse: 'Deploy confidently in reliable windows; audit low-reliability windows before major action.',
+        watchFor: 'A quiet-looking window may simply be under-recorded, not actually safe.',
         examples: topRows(rows, 'time_window_reliability_score_0_100'),
         icon: Target,
         tone: 'green'
       },
       {
         title: '5. Hotspot Persistence Class',
+        question: 'Is this chronic, emerging, recurring, or one-off?',
         primary: compactNumber(persistentCount),
         primaryLabel: `${percentText(persistentCount, total)} recurring or emerging`,
         score: compactNumber(countWhere(rows, (row) => row.hotspot_persistence_class === 'Chronic hotspot')),
         scoreLabel: 'chronic hotspots',
-        role: 'Classifies zones as chronic, emerging, recurring watchlist, coverage-risk, or one-off.',
-        action: 'Match enforcement mode to lifecycle: clear chronic zones, audit emerging zones, watch sparse zones.',
-        chart: countDistribution(rows, (row) => row.hotspot_persistence_class),
+        plainMeaning: 'Classifies the lifecycle of the hotspot so the action is not one-size-fits-all.',
+        officerUse: 'Clear chronic zones, audit emerging zones, and watch sparse/one-off zones.',
+        watchFor: 'Emerging hotspots need early attention; chronic hotspots need repeated enforcement windows.',
         examples: rows
           .filter((row) => ['Chronic hotspot', 'Emerging hotspot'].includes(row.hotspot_persistence_class ?? ''))
           .slice(0, 3),
@@ -1001,39 +984,42 @@ function OperationalIntelligenceReport({
       },
       {
         title: '6. Violation Text Severity Mining',
+        question: 'Does the violation wording imply road blockage?',
         primary: compactNumber(severeTextCount),
-        primaryLabel: `${percentText(severeTextCount, total)} severe text signature`,
+        primaryLabel: `${percentText(severeTextCount, total)} severe text rows`,
         score: oneDecimal(meanField(rows, 'violation_text_severity_score_0_100')),
-        scoreLabel: 'avg text severity',
-        role: 'Mines violation wording for obstruction clues such as no-parking pressure or running-lane blockage.',
-        action: 'Use the text signature to explain why a hotspot needs tow, patrol, or engineering response.',
-        chart: countDistribution(rows, (row) => row.violation_text_severity_signature),
+        scoreLabel: 'average text severity',
+        plainMeaning: 'Looks for wording linked to no-parking, main-road obstruction, double parking or running-lane pressure.',
+        officerUse: 'Use the wording to explain why the action is tow, patrol, fixed-window enforcement or engineering.',
+        watchFor: 'Text signals support the decision; they do not replace field judgement.',
         examples: topRows(rows, 'violation_text_severity_score_0_100'),
         icon: Info,
         tone: 'slate'
       },
       {
         title: '7. Station-Level Enforcement Load',
+        question: 'Is this police station overloaded?',
         primary: compactNumber(loadedStationCount),
         primaryLabel: `${percentText(loadedStationCount, total)} high/critical load`,
         score: oneDecimal(meanField(rows, 'station_enforcement_load_score_0_100')),
-        scoreLabel: 'avg station load',
-        role: 'Shows whether a police station is carrying too many priority zones for a normal enforcement wave.',
-        action: 'Escalate overloaded stations for tow support, pooled patrols, or staggered deployment windows.',
-        chart: countDistribution(rows, (row) => row.station_load_band),
+        scoreLabel: 'average station load',
+        plainMeaning: 'Shows whether a station has too many priority zones for a normal shift.',
+        officerUse: 'Escalate tow support, pooled patrols, or staggered deployment windows.',
+        watchFor: 'A high-load station may need help even if each individual hotspot looks manageable.',
         examples: topRows(rows, 'station_enforcement_load_score_0_100'),
         icon: Truck,
         tone: 'orange'
       },
       {
         title: '8. Confidence-Aware Priority',
+        question: 'Which priority is strong enough to act on first?',
         primary: compactNumber(confidencePriorityCount),
         primaryLabel: `${percentText(confidencePriorityCount, total)} high-confidence priorities`,
         score: oneDecimal(meanField(rows, 'confidence_adjusted_priority_0_100')),
-        scoreLabel: 'avg confidence-adjusted priority',
-        role: 'Combines priority with evidence quality so the dispatch queue does not overreact to noisy rows.',
-        action: 'Use this as the final sorting layer for judge-facing and control-room deployment plans.',
-        chart: scoreBandDistribution(rows, 'confidence_adjusted_priority_0_100'),
+        scoreLabel: 'average confidence priority',
+        plainMeaning: 'Combines priority with evidence quality so noisy rows do not dominate the dispatch queue.',
+        officerUse: 'Use this as the final sorting layer when choosing the first 10-20 actions.',
+        watchFor: 'A high score with weak evidence should become an audit, not a full deployment.',
         examples: topRows(rows, 'confidence_adjusted_priority_0_100'),
         icon: BarChart3,
         tone: 'green'
@@ -1041,14 +1027,6 @@ function OperationalIntelligenceReport({
     ];
   }, [rows]);
 
-  const persistenceDistribution = useMemo(
-    () => countDistribution(rows, (row) => row.hotspot_persistence_class, 7),
-    [rows]
-  );
-  const repeatDistribution = useMemo(
-    () => countDistribution(rows, (row) => row.repeat_vehicle_movement_pattern, 6),
-    [rows]
-  );
   const topEvidenceRows = useMemo(
     () =>
       [...rows]
@@ -1066,26 +1044,48 @@ function OperationalIntelligenceReport({
         .slice(0, 6),
     [rows]
   );
+  const proofCards = [
+    {
+      label: 'Recurring pressure',
+      value: compactNumber(recurringCount),
+      body: 'These zones are not one-off records; they keep returning or are rising fast.'
+    },
+    {
+      label: 'Repeat vehicle pressure',
+      value: compactNumber(repeatHeavyCount),
+      body: 'The same vehicles or repeat patterns make normal one-time challans less effective.'
+    },
+    {
+      label: 'Visibility checked',
+      value: compactNumber(visibilityCheckedCount),
+      body: 'The ranking checks whether a place is genuinely risky or only heavily recorded.'
+    },
+    {
+      label: 'High confidence',
+      value: compactNumber(highConfidenceCount),
+      body: 'These rows have stronger evidence for immediate officer action.'
+    }
+  ];
 
   return (
     <section className="stack">
       <PageTitle
-        title="8-Metric Operational Intelligence Report"
-        subtitle="The new backend signals shown as a readable report: growth, bias, repeat movement, reliability, persistence, severity, station load and confidence."
+        title="Intelligence Report"
+        subtitle="The same eight signals from the pitch, translated into simple field questions and actions."
       />
-      <article className="intel-hero">
+      <article className="intel-hero simple-intel-hero">
         <div>
-          <span className="ops-label">Judge-facing proof layer</span>
-          <h2>These are not decorative metrics. Each one changes an enforcement decision.</h2>
+          <span className="ops-label">Officer proof layer</span>
+          <h2>Read every metric as: what is happening, why it matters, what to do next.</h2>
           <p>
-            The report recalculates under filters so a control-room officer can inspect one station or one time window
-            without losing the evidence trail behind the priority queue.
+            The technical names stay unchanged for the presentation, but each card now explains the metric in plain language.
+            Scores near 80-100 usually mean “act or verify now”; lower scores usually mean “watch or audit.”
           </p>
         </div>
         <div className="intel-hero-stats">
           <div><strong>{compactNumber(rows.length)}</strong><span>filtered priority rows</span></div>
-          <div><strong>{compactNumber(data.metrics.emerging_priority_zones)}</strong><span>global emerging zones</span></div>
-          <div><strong>{compactNumber(data.metrics.hidden_hotspot_candidates)}</strong><span>global hidden candidates</span></div>
+          <div><strong>{compactNumber(recurringCount)}</strong><span>recurring/rising</span></div>
+          <div><strong>{compactNumber(highConfidenceCount)}</strong><span>high confidence</span></div>
         </div>
       </article>
 
@@ -1106,22 +1106,45 @@ function OperationalIntelligenceReport({
         <EmptyState title="No report rows" body="Relax the station, time-window or priority filter." />
       ) : (
         <>
-          <div className="intelligence-grid">
-            {metrics.map((metric) => (
-              <IntelligenceMetricCard key={metric.title} metric={metric} onSelect={onSelect} />
+          <div className="intel-guide">
+            <div>
+              <strong>Metric name</strong>
+              <span>Same terminology as the pitch deck.</span>
+            </div>
+            <div>
+              <strong>Plain question</strong>
+              <span>The field interpretation in one line.</span>
+            </div>
+            <div>
+              <strong>Officer use</strong>
+              <span>How this changes patrol, tow or audit action.</span>
+            </div>
+            <div>
+              <strong>Examples</strong>
+              <span>Click any example to open the full field brief.</span>
+            </div>
+          </div>
+
+          <div className="plain-evidence-grid report-proof-grid">
+            {proofCards.map((card) => (
+              <div key={card.label}>
+                <span>{card.label}</span>
+                <strong>{card.value}</strong>
+                <small>{card.body}</small>
+              </div>
             ))}
           </div>
 
-          <div className="intel-deep-dive">
-            <ChartCard title="Lifecycle Mix" subtitle="How the selected hotspots behave operationally. Chronic zones need clearance; emerging zones need early audit.">
-              <DistributionBars data={persistenceDistribution} />
-            </ChartCard>
-            <ChartCard title="Repeat Movement Mix" subtitle="Separates local chronic repeat pressure from cross-station repeat movement.">
-              <DistributionBars data={repeatDistribution} />
-            </ChartCard>
-          </div>
+          <details className="technical-details">
+            <summary>Show detailed signal explanations</summary>
+            <div className="intelligence-grid readable-intel-grid">
+              {metrics.map((metric) => (
+                <IntelligenceMetricCard key={metric.title} metric={metric} onSelect={onSelect} />
+              ))}
+            </div>
+          </details>
 
-          <ChartCard title="Best Evidence Examples" subtitle="Click any row to open the full hotspot intelligence brief.">
+          <ChartCard title="Best proof examples" subtitle="Click any row to open the exact field brief.">
             <div className="intel-evidence-list">
               {topEvidenceRows.map((row) => (
                 <button key={row.zone_id} type="button" onClick={() => onSelect(row.zone_id)}>
@@ -1129,8 +1152,7 @@ function OperationalIntelligenceReport({
                   <strong>{row.zone_name}</strong>
                   <small>{row.police_station} · {row.best_time_window}</small>
                   <em>
-                    Priority {oneDecimal(row.confidence_adjusted_priority_0_100)} · Emerging {oneDecimal(row.emerging_hotspot_score_0_100)} ·
-                    Repeat {oneDecimal(row.repeat_vehicle_movement_score_0_100)}
+                    {officerActionText(row.recommended_action)} · {row.confidence_band} confidence
                   </em>
                 </button>
               ))}
@@ -1164,9 +1186,21 @@ function IntelligenceMetricCard({
         <span>{metric.scoreLabel}</span>
         <strong>{metric.score}</strong>
       </div>
-      <p>{metric.role}</p>
-      <p className="intel-action">{metric.action}</p>
-      <DistributionBars data={metric.chart} compact />
+      <div className="intel-explain-block">
+        <span>Plain question</span>
+        <strong>{metric.question}</strong>
+      </div>
+      <div className="intel-explain-block">
+        <span>What it means</span>
+        <p>{metric.plainMeaning}</p>
+      </div>
+      <div className="intel-explain-block action">
+        <span>Officer use</span>
+        <p>{metric.officerUse}</p>
+      </div>
+      <div className="intel-watch">
+        <strong>Watch for:</strong> {metric.watchFor}
+      </div>
       <div className="intel-examples">
         {metric.examples.slice(0, 3).map((row) => (
           <button key={row.zone_id} type="button" onClick={() => onSelect(row.zone_id)}>
@@ -1275,8 +1309,6 @@ function HotspotIntelligence({
   selectedPlan: EnforcementPlanRow;
   onSelect: (zoneId: string) => void;
 }) {
-  const drilldown =
-    data.drilldowns.find((item) => item.zone_id === selectedPlan.zone_id) ?? data.drilldowns[0];
   const roadspace: RoadspaceHotspot | undefined = data.roadspaceIntelligence.find(
     (item) => item.zone_id === selectedPlan.zone_id
   );
@@ -1389,7 +1421,6 @@ function HotspotIntelligence({
         />
       </ChartCard>
       <ZoneBrief plan={selectedPlan} roadspace={roadspace} />
-      {drilldown ? <DrilldownCharts drilldown={drilldown} /> : <EmptyState title="No drilldown" body="Drilldown export is unavailable." />}
     </section>
   );
 }
