@@ -9,9 +9,26 @@ from pathlib import Path
 
 PROJECT_DIR = Path(__file__).resolve().parent
 LOCAL_DEPS = PROJECT_DIR / ".deps"
+sys.path.insert(0, str(PROJECT_DIR))
+
+# .deps holds dependencies vendored for one specific Python ABI (cpython-3.11).
+# Prefer it (exact tested versions), but if its C-extensions cannot load under the
+# running interpreter — e.g. a different Python version such as conda's 3.10 —
+# drop it and fall back to the active environment so the pipeline still runs
+# wherever the requirements are installed.
 if LOCAL_DEPS.exists():
     sys.path.insert(0, str(LOCAL_DEPS))
-sys.path.insert(0, str(PROJECT_DIR))
+    try:
+        import numpy  # noqa: F401  (probe the vendored C-extensions)
+    except Exception:
+        sys.path.remove(str(LOCAL_DEPS))
+        for _stale in [m for m in list(sys.modules) if m == "numpy" or m.startswith("numpy.")]:
+            del sys.modules[_stale]
+        print(
+            "[setup] Vendored .deps is built for a different Python version and could not "
+            "load; falling back to this environment's installed packages.",
+            file=sys.stderr,
+        )
 
 os.environ.setdefault("MPLCONFIGDIR", str(PROJECT_DIR / "outputs" / ".matplotlib"))
 os.environ.setdefault("LOKY_MAX_CPU_COUNT", "4")
@@ -32,6 +49,7 @@ from src.impact_metrics import (  # noqa: E402
 from src.map_outputs import generate_maps  # noqa: E402
 from src.policy_simulation import export_policy_simulation, simulate_deployment_policies  # noqa: E402
 from src.plots import generate_basic_plots  # noqa: E402
+from src.innovation_layer import main as build_innovation_layer  # noqa: E402
 from src.recommendations import build_enforcement_plan, write_operational_intelligence_summary  # noqa: E402
 from src.roadspace_intelligence import (  # noqa: E402
     build_roadspace_intelligence,
@@ -135,6 +153,7 @@ def main() -> None:
     print("[15/16] Generating figures and maps...")
     generate_basic_plots()
     generate_maps()
+    build_innovation_layer()  # obstruction-density heatmaps + repeat-offender circuit network
 
     print("[16/16] Exporting frontend JSON/GeoJSON...")
     export_frontend_data()
