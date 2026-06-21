@@ -1324,7 +1324,7 @@ function HotspotIntelligence({
       </div>
       <ChartCard
         title="Hotspot Location & Corridor Risk Map"
-        subtitle="Live Bengaluru basemap with ParkPulse corridor-risk lanes: blue = low, yellow = moderate, red = severe. Click any nearby hotspot to switch the brief."
+        subtitle="MapMyIndia/Mappls Bengaluru basemap with ParkPulse corridor-risk lanes: blue = low, yellow = moderate, red = severe. Click any nearby hotspot to switch the brief."
       >
         <RiskMap
           segments={data.congestionSegments}
@@ -1625,14 +1625,25 @@ function Methodology() {
         <h2>Built Only on the Provided Dataset</h2>
         <p>
           Every analytical layer in ParkPulse — hotspots, TORI, corridors, risk scores, and ELRM — is derived <strong>only</strong> from
-          the provided enforcement violation records. There is no external GIS, no purchased traffic or speed feed, and no map-matching
-          service. The command map adds an OpenStreetMap/CARTO street basemap purely for geographic context; it feeds no analysis, and the
+          the provided enforcement violation records. There is no purchased traffic or speed feed, and no map-matching
+          service. The command map uses MapMyIndia/Mappls as the geographic context layer; it feeds no analysis, and the
           risk layers still render if the basemap is unavailable.
         </p>
         <p>
           That means ParkPulse is deployable on the data a city already owns, with no data-sharing agreement. Where richer signals would
           help — surveyed lane geometry, signal-health telemetry, live workforce rosters, probe-vehicle speeds — they are marked as
           optional future integrations, never silently assumed.
+        </p>
+      </article>
+      <article className="method-card">
+        <h2>Acknowledgements</h2>
+        <p>
+          The enforcement dataset was provided through Flipkart Gridlock Round 2 by Bengaluru Traffic Police / ASTraM.
+          MapMyIndia / Mappls provides the geographic context layer when the configured web key is active.
+        </p>
+        <p>
+          ParkPulse generates the derived hotspot rankings, obstruction-risk estimates, field briefs, corridor overlays and
+          deployment simulation from the provided enforcement records.
         </p>
       </article>
       <article className="method-card">

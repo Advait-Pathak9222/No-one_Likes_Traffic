@@ -7,6 +7,7 @@
 <p align="center">
   <img alt="Python" src="https://img.shields.io/badge/Python-3.10%2B-2874F0">
   <img alt="React" src="https://img.shields.io/badge/React-TypeScript-172337">
+  <img alt="MapMyIndia" src="https://img.shields.io/badge/Maps-MapMyIndia%20%2F%20Mappls-004AAD">
   <img alt="Backend" src="https://img.shields.io/badge/Pipeline-16%20Stages-FC5A1E">
   <img alt="Data" src="https://img.shields.io/badge/Records-298,450-16A34A">
   <img alt="Theme" src="https://img.shields.io/badge/Flipkart%20Gridlock-Theme%201-FFE500">
@@ -62,6 +63,7 @@ Intentionally excluded from the runtime repository:
 | Python | 3.10 or newer |
 | Node.js | 18 or newer |
 | npm | bundled with Node.js |
+| MapMyIndia / Mappls key | included competition web key, overrideable via env |
 
 The backend uses scikit-learn's `HistGradientBoostingRegressor` by default.
 LightGBM/XGBoost are optional accelerators and are not required to run the
@@ -167,6 +169,22 @@ The dashboard can also run immediately from the committed
 
 ## 5. Run Frontend Dashboard
 
+Optional: override the default competition MapMyIndia / Mappls map key.
+
+macOS / Linux:
+
+```bash
+export VITE_MAPMYINDIA_MAP_KEY="your_mapmyindia_or_mappls_key"
+```
+
+Windows PowerShell:
+
+```powershell
+$env:VITE_MAPMYINDIA_MAP_KEY="your_mapmyindia_or_mappls_key"
+```
+
+Build and serve:
+
 ```bash
 cd frontend
 npm ci
@@ -174,11 +192,18 @@ npm run build
 npm run preview
 ```
 
-Open:
+Open the dashboard at:
 
 ```text
-http://127.0.0.1:4173
+http://lvh.me:4173
 ```
+
+> **Why `lvh.me` and not `localhost`?** The MapMyIndia / Mappls web key authorises
+> the map by request domain, and the provider **rejects `localhost` / `127.0.0.1`**
+> (loopback hostnames). `lvh.me` is a public hostname that resolves to `127.0.0.1`,
+> so the dashboard runs locally while still presenting a real domain to MapMyIndia.
+> Opening `http://127.0.0.1:4173` also works, but the MapMyIndia basemap will use the
+> offline fallback there (see **Maps and WebGL fallback** below).
 
 Development mode:
 
@@ -189,7 +214,7 @@ npm run dev
 Open:
 
 ```text
-http://127.0.0.1:5173
+http://lvh.me:5173
 ```
 
 Dashboard pages:
@@ -200,6 +225,59 @@ Dashboard pages:
 - Hotspot Intelligence
 - Deployment Simulator
 - Methodology
+
+### Maps and WebGL fallback
+
+The Command Center and Hotspot Intelligence maps render a **MapMyIndia / Mappls
+WebGL vector basemap**, with the ParkPulse hotspot and corridor-risk layers drawn
+as **native map layers** — color-coded corridor-risk lines (`mappls.Polyline`) and
+clickable hotspot markers (`mappls.Marker`) that stay aligned to the streets while
+panning and zooming.
+
+Because the MapMyIndia vector map is WebGL-based, **a fallback mechanism is built in
+for devices or browsers without WebGL** (or with hardware acceleration disabled):
+the dashboard automatically switches to an **OpenStreetMap basemap (Leaflet)** and
+re-renders the same ParkPulse risk layers natively on it, so the demo never goes
+blank. The active provider is shown in the map badge.
+
+Provider selection is automatic:
+
+| Condition | Basemap |
+|---|---|
+| Authorised domain (e.g. `lvh.me`) **and** WebGL available | MapMyIndia / Mappls (primary) |
+| WebGL unavailable, domain not authorised, or provider unreachable | OpenStreetMap (automatic fallback) |
+
+To authorise the MapMyIndia basemap for local use, add the serving domain to the
+web key's allowed-domains list in the Mappls console:
+
+```text
+lvh.me
+```
+
+If the dashboard is hosted, also add the hosted domain. IP / Sub-Net restrictions
+are for server-side keys and should be left blank for this browser dashboard.
+
+> **WebGL tip:** MapMyIndia's vector map needs WebGL. Safari renders it out of the
+> box. If Chrome shows the OpenStreetMap fallback, enable
+> `chrome://settings/system` → "Use graphics acceleration", or set
+> `chrome://flags` → "Override software rendering list" → Enabled, then relaunch.
+
+---
+
+## Acknowledgements
+
+ParkPulse stands on top of the official Flipkart Gridlock Round 2 ecosystem:
+
+| Contribution | Acknowledgement |
+|---|---|
+| Traffic enforcement dataset | Bengaluru Traffic Police / ASTraM, shared for the hackathon problem statement |
+| Mapping infrastructure | MapMyIndia / Mappls web mapping services |
+| Analytics and product layer | ParkPulse ranking, scoring, simulation and dashboard built by the team |
+
+All hotspot rankings, obstruction-risk estimates, deployment plans and dashboard
+layers are derived by ParkPulse from the provided enforcement records. MapMyIndia
+/ Mappls is used as the geographic context layer; it does not alter the scoring
+logic.
 
 ---
 
@@ -233,6 +311,7 @@ cd frontend
 npm ci
 npm run build
 npm run preview
+# then open http://lvh.me:4173 (MapMyIndia basemap) in a WebGL-capable browser
 ```
 
 The latest sanity check completed:

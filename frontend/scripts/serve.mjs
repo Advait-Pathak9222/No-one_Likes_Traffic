@@ -62,5 +62,7 @@ const server = http.createServer((request, response) => {
 });
 
 server.listen(port, host, () => {
-  console.log(`ParkPulse frontend running at http://${host}:${port}`);
+  console.log(`\nParkPulse frontend running. Open the dashboard at:`);
+  console.log(`  ➜  http://lvh.me:${port}      <- use this (MapMyIndia / Mappls basemap; open in Safari)`);
+  console.log(`  ➜  http://127.0.0.1:${port}   (also works, but the map uses the OpenStreetMap fallback)\n`);
 });

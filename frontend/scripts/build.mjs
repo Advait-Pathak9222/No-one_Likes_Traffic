@@ -6,6 +6,8 @@ const projectRoot = process.cwd();
 const distDir = path.join(projectRoot, 'dist');
 const publicDir = path.join(projectRoot, 'public');
 const assetsDir = path.join(distDir, 'assets');
+const defaultMapKey = 'yxooegymggcadugrvewdohokcacaqhqashdl';
+const mapMyIndiaKey = process.env.VITE_MAPMYINDIA_MAP_KEY || process.env.MAPMYINDIA_MAP_KEY || defaultMapKey;
 
 fs.rmSync(distDir, { recursive: true, force: true });
 fs.mkdirSync(assetsDir, { recursive: true });
@@ -37,7 +39,8 @@ await esbuild.build({
     '.ttf': 'file'
   },
   define: {
-    'process.env.NODE_ENV': '"production"'
+    'process.env.NODE_ENV': '"production"',
+    __PARKPULSE_MAPMYINDIA_MAP_KEY__: JSON.stringify(mapMyIndiaKey)
   },
   logLevel: 'info'
 });

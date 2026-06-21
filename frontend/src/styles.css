@@ -1582,34 +1582,223 @@ tr:hover {
   color: var(--blue);
 }
 
-/* --- Offline MapLibre risk map --- */
+/* --- MapMyIndia/Mappls primary risk map --- */
 .risk-map-frame {
   position: relative;
   min-height: 520px;
   background: #eef2f7;
+  overflow: hidden;
 }
 
 .map-shell.compact .risk-map-frame {
   min-height: 475px;
 }
 
-.risk-map-canvas {
+.mapmyindia-sdk-canvas {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
 }
 
-.risk-map-canvas.leaflet-container,
-.risk-map-canvas .leaflet-container {
+.mapmyindia-sdk-canvas {
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.mapmyindia-sdk-canvas.active {
+  opacity: 1;
+}
+
+/* OpenStreetMap (Leaflet) emergency fallback basemap */
+.leaflet-basemap {
+  position: absolute;
+  inset: 0;
+  /* z-index:0 isolates Leaflet's internal panes (z 200–700) beneath our
+     legend/badge (z-index 4), which would otherwise be hidden. */
+  z-index: 0;
+}
+
+.map-provider-badge.osm strong {
+  color: #2fb673;
+}
+
+/* Banner shown when Mappls falls back to OSM (wrong host or WebGL failure) */
+.mappls-host-hint {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  max-width: 84%;
+  display: grid;
+  gap: 2px;
+  text-align: center;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: rgba(40, 116, 240, 0.97);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 14px 32px rgba(23, 35, 55, 0.3);
+}
+
+.mappls-host-hint.warn {
+  background: rgba(251, 100, 27, 0.97);
+}
+
+.mappls-host-hint span {
+  font-weight: 800;
+}
+
+.mappls-host-hint:hover {
+  filter: brightness(1.06);
+}
+
+/* Live MapMyIndia tools: place search + satellite toggle (top-right of the map) */
+.mappls-tools {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 6;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.mappls-search-input {
+  width: 248px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(23, 35, 55, 0.16);
+  background: rgba(255, 255, 255, 0.97);
+  color: var(--ink);
+  font-size: 13px;
+  box-shadow: 0 10px 26px rgba(23, 35, 55, 0.18);
+}
+
+.mappls-search-input:focus {
   outline: none;
+  border-color: var(--blue);
+}
+
+.mappls-tools.compact .mappls-search-input {
+  width: 168px;
+}
+
+.mappls-style-toggle {
+  padding: 9px 13px;
+  border-radius: 10px;
+  border: 1px solid rgba(23, 35, 55, 0.16);
+  background: rgba(255, 255, 255, 0.97);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 10px 26px rgba(23, 35, 55, 0.18);
+}
+
+.mappls-style-toggle.on {
+  background: #172337;
+  color: #fff;
+  border-color: #172337;
+}
+
+/* Keep the Mappls autosuggest dropdown above the map canvas */
+.mappls-tools .mappls_API_search_list,
+.mappls_API_search_list {
+  z-index: 7 !important;
+}
+
+/* Native Mappls hotspot markers (color-coded circles drawn on the vector map) */
+.pp-mappls-dot {
+  border-radius: 50%;
+  box-sizing: border-box;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(23, 35, 55, 0.32);
+}
+
+.mapmyindia-primary .mapmyindia-sdk-canvas {
+  pointer-events: auto;
+}
+
+.mapmyindia-primary.provider-unavailable .risk-map-frame {
+  background:
+    linear-gradient(135deg, rgba(40, 116, 240, 0.08), rgba(251, 100, 27, 0.08)),
+    radial-gradient(circle at 18% 22%, rgba(40, 116, 240, 0.18), transparent 26%),
+    radial-gradient(circle at 70% 62%, rgba(251, 100, 27, 0.16), transparent 30%),
+    #eef2f7;
+}
+
+.mapmyindia-unavailable-panel {
+  position: absolute;
+  inset: 18px 18px auto auto;
+  z-index: 1;
+  max-width: 360px;
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(23, 35, 55, 0.12);
+  box-shadow: 0 18px 42px rgba(23, 35, 55, 0.16);
+}
+
+.mapmyindia-unavailable-panel strong {
+  color: var(--orange);
+  font-size: 13px;
+}
+
+.mapmyindia-unavailable-panel span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.parkpulse-map-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.corridor-svg-casing,
+.corridor-svg-lines {
+  pointer-events: none;
+}
+
+.corridor-svg-casing polyline {
+  opacity: 0.82;
+}
+
+.corridor-svg-lines polyline {
+  opacity: 0.95;
+  filter: drop-shadow(0 1px 2px rgba(23, 35, 55, 0.22));
+}
+
+.hotspot-svg-points circle {
+  pointer-events: auto;
+  cursor: pointer;
+  filter: drop-shadow(0 2px 5px rgba(23, 35, 55, 0.24));
+  transition: r 0.15s ease, opacity 0.15s ease;
+}
+
+.hotspot-svg-points circle:hover,
+.hotspot-svg-points circle:focus {
+  outline: none;
+  opacity: 1;
 }
 
 .risk-legend {
   position: absolute;
   left: 14px;
   bottom: 14px;
-  z-index: 2;
+  z-index: 4;
   display: grid;
   gap: 3px;
   padding: 11px 13px;
@@ -1618,6 +1807,42 @@ tr:hover {
   color: #eaf1ff;
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.4);
   font-size: 12px;
+}
+
+.map-provider-badge {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 4;
+  display: grid;
+  gap: 2px;
+  padding: 9px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.93);
+  color: var(--ink);
+  border: 1px solid rgba(23, 35, 55, 0.12);
+  box-shadow: 0 14px 30px rgba(23, 35, 55, 0.18);
+}
+
+.map-provider-badge strong {
+  font-size: 12px;
+  color: var(--blue);
+}
+
+.map-provider-badge span {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.map-provider-badge.unavailable strong {
+  color: var(--orange);
+}
+
+.map-provider-badge.loading strong {
+  color: #6b7280;
 }
 
 .risk-legend strong {
@@ -1648,7 +1873,7 @@ tr:hover {
   right: 14px;
   top: 14px;
   width: 268px;
-  z-index: 3;
+  z-index: 5;
   display: grid;
   gap: 5px;
   padding: 14px;
