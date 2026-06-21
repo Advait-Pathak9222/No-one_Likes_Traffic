@@ -168,7 +168,7 @@ function Header({ error, data }: { error: string | null; data: ParkPulseData }) 
   return (
     <section className="hero-panel">
       <div className="hero-text">
-        <p className="eyebrow">Bengaluru Traffic Police · Operational Intelligence</p>
+        <p className="eyebrow">Bengaluru Traffic Police · Poor Visibility on Parking-Induced Congestion</p>
         <h1>ParkPulse Bengaluru</h1>
         <p className="hero-subtitle">
           Illegal-parking impact intelligence — prioritising where, when and how enforcement recovers the most road capacity.
@@ -220,7 +220,7 @@ function Sidebar({
       <div className="sidebar-note">
         <Info size={16} />
         <span>
-          ParkPulse separates recurrence prediction from operational impact; all traffic-flow outputs are modelled estimates, not measured speed.
+          Theme: Poor Visibility on Parking-Induced Congestion. ParkPulse separates recurrence prediction from operational impact; traffic-flow outputs are modelled estimates.
         </span>
       </div>
       {usingMockData && <div className="sidebar-warning">Using mock fallback data</div>}
@@ -1638,7 +1638,8 @@ function Methodology() {
       <article className="method-card">
         <h2>Acknowledgements</h2>
         <p>
-          The enforcement dataset was provided through Flipkart Gridlock Round 2 by Bengaluru Traffic Police / ASTraM.
+          The enforcement dataset was provided through Flipkart Gridlock Round 2 by Bengaluru Traffic Police / ASTraM for
+          Theme 1: Poor Visibility on Parking-Induced Congestion.
           MapMyIndia / Mappls provides the geographic context layer when the configured web key is active.
         </p>
         <p>

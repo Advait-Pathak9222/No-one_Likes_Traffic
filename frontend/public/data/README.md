@@ -9,6 +9,7 @@ PYTHONPATH=.deps:. python3 -m src.export_frontend_data
 The React app will use mock fallback data if these files are absent.
 
 Acknowledgement: these demo artifacts are derived from the Bengaluru Traffic
-Police / ASTraM Theme 1 enforcement records. The map context is provided by
-MapMyIndia / Mappls when the configured web key is active; ParkPulse generates
-the analytical risk layers.
+Police / ASTraM Theme 1 enforcement records for **Poor Visibility on
+Parking-Induced Congestion**. The map context is provided by MapMyIndia /
+Mappls when the configured web key is active; ParkPulse generates the analytical
+risk layers.

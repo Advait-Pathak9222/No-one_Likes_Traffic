@@ -2,6 +2,8 @@
 
 <p align="center">
   <b>AI-driven parking intelligence for illegal-parking hotspots and targeted enforcement.</b>
+  <br>
+  <b>Theme:</b> Poor Visibility on Parking-Induced Congestion
 </p>
 
 <p align="center">
@@ -10,15 +12,16 @@
   <img alt="MapMyIndia" src="https://img.shields.io/badge/Maps-MapMyIndia%20%2F%20Mappls-004AAD">
   <img alt="Backend" src="https://img.shields.io/badge/Pipeline-16%20Stages-FC5A1E">
   <img alt="Data" src="https://img.shields.io/badge/Records-298,450-16A34A">
-  <img alt="Theme" src="https://img.shields.io/badge/Flipkart%20Gridlock-Theme%201-FFE500">
+  <img alt="Theme" src="https://img.shields.io/badge/Theme-Parking--Induced%20Congestion-FFE500">
 </p>
 
 ---
 
 ## What ParkPulse Does
 
-ParkPulse converts police parking-violation records into an enforcement decision
-system. It answers four operational questions:
+ParkPulse addresses **Poor Visibility on Parking-Induced Congestion** by
+converting police parking-violation records into an enforcement decision system.
+It answers four operational questions:
 
 | Question | ParkPulse output |
 |---|---|

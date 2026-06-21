@@ -7,6 +7,8 @@ Round 2 problem statement by Bengaluru Traffic Police / ASTraM. ParkPulse uses
 that dataset to derive hotspot rankings, operational risk estimates and
 deployment recommendations.
 
+Official theme name: **Poor Visibility on Parking-Induced Congestion**.
+
 By default, ParkPulse looks for the official Theme 1 dataset at:
 
 ```text

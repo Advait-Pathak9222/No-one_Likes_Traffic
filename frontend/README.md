@@ -1,7 +1,8 @@
 # ParkPulse Bengaluru Frontend
 
-React command-center frontend for Theme 1: illegal parking impact intelligence
-and enforcement prioritization.
+React command-center frontend for **Theme 1: Poor Visibility on
+Parking-Induced Congestion** — illegal parking impact intelligence and
+enforcement prioritization.
 
 ## What It Does
 
@@ -136,14 +137,15 @@ Bengaluru hotspots. Mock data is only for frontend demo resilience.
 - React, MIT
 - esbuild, MIT
 - Vite, MIT
-- Leaflet, BSD-2-Clause
+- Leaflet, BSD-2-Clause (runtime emergency fallback only)
 - Recharts, MIT
 - lucide-react, ISC
 
 ## Acknowledgements
 
 - Data source: Bengaluru Traffic Police / ASTraM enforcement records shared for
-  Flipkart Gridlock Round 2 Theme 1.
+  Flipkart Gridlock Round 2 Theme 1, **Poor Visibility on Parking-Induced
+  Congestion**.
 - Maps: MapMyIndia / Mappls web mapping services provide the geographic context
   layer where the key is active.
 - Product intelligence: ParkPulse generates the hotspot rankings, risk layers,
