@@ -85,6 +85,39 @@ function actionLabel(action: string): string {
   return 'Patrol';
 }
 
+function officerActionText(action: string): string {
+  const lower = action.toLowerCase();
+  if (lower.includes('tow')) return 'Send tow support and clear parked vehicles';
+  if (lower.includes('engineering')) return 'Send patrol and flag for engineering fix';
+  if (lower.includes('fixed')) return 'Place a fixed-window enforcement unit';
+  if (lower.includes('metro') || lower.includes('market')) return 'Control pickup/drop and spillover parking';
+  if (lower.includes('watch')) return 'Keep on watchlist and audit if pressure rises';
+  return 'Send targeted patrol';
+}
+
+function resourceText(plan: EnforcementPlanRow): string {
+  const patrol = plan.estimated_patrol_hours ?? 0;
+  const tow = plan.estimated_tow_hours ?? 0;
+  if (tow > 0 && patrol > 0) return `Tow + patrol support (${oneDecimal(patrol)} patrol hr, ${oneDecimal(tow)} tow hr)`;
+  if (tow > 0) return `Tow support (${oneDecimal(tow)} tow hr)`;
+  if (patrol > 0) return `Patrol support (${oneDecimal(patrol)} patrol hr)`;
+  return 'Officer audit / watchlist';
+}
+
+function urgencyText(plan: EnforcementPlanRow): string {
+  const sla = plan.clearance_sla_minutes;
+  if (sla === undefined || sla === null) return plan.clearance_decision_band ?? 'Act in target window';
+  if (sla <= 30) return `Immediate response: within ${compactNumber(sla)} min`;
+  if (sla <= 90) return `Same-shift response: within ${compactNumber(sla)} min`;
+  return `Planned response: within ${compactNumber(sla)} min`;
+}
+
+function plainWhy(plan: EnforcementPlanRow, roadspace?: RoadspaceHotspot): string {
+  if (roadspace?.dominant_lane_issue) return roadspace.dominant_lane_issue;
+  if (plan.reasoning) return plan.reasoning;
+  return 'Recurring illegal-parking pressure is likely to affect usable road space in this area.';
+}
+
 type MapFeature = HotspotFeature | LaneHotspotFeature;
 
 function mapProps(feature: MapFeature) {
@@ -1248,69 +1281,56 @@ function HotspotIntelligence({
     (item) => item.zone_id === selectedPlan.zone_id
   );
   const mapHotspots = data.laneHotspots.features.length > 0 ? data.laneHotspots.features : data.hotspots.features;
-  const elrm =
-    selectedPlan.estimated_lane_recovery_minutes !== undefined && selectedPlan.estimated_lane_recovery_minutes !== null
-      ? selectedPlan.estimated_lane_recovery_minutes_low !== undefined && selectedPlan.estimated_lane_recovery_minutes_high !== undefined
-        ? `${oneDecimal(selectedPlan.estimated_lane_recovery_minutes)} min (${oneDecimal(selectedPlan.estimated_lane_recovery_minutes_low)}–${oneDecimal(selectedPlan.estimated_lane_recovery_minutes_high)})`
-        : `${oneDecimal(selectedPlan.estimated_lane_recovery_minutes)} min`
-      : null;
 
   return (
     <section className="stack">
-      <PageTitle title="Hotspot Intelligence" subtitle="Explain why a selected zone is high priority." />
+      <PageTitle title="Hotspot Intelligence" subtitle="Officer-ready brief for one selected hotspot." />
       <div className="drilldown-layout">
-        <div className="zone-hero">
-          <span>Selected hotspot</span>
+        <div className="zone-hero officer-brief-card">
+          <div className="brief-topline">
+            <span>Officer field brief</span>
+            <div className="chip-row compact">
+              <ActionChip action={selectedPlan.recommended_action} />
+              <ConfidenceBadge band={selectedPlan.confidence_band} />
+            </div>
+          </div>
           <h2>{selectedPlan.zone_name}</h2>
-          <p>{selectedPlan.police_station} · {selectedPlan.best_time_window}</p>
-          <div className="chip-row">
-            <ActionChip action={selectedPlan.recommended_action} />
-            <ConfidenceBadge band={selectedPlan.confidence_band} />
-            <span className="metric-pill">Spillback {oneDecimal(selectedPlan.queue_spillback_risk_0_100)}</span>
-            <span className="metric-pill">SLA {compactNumber(selectedPlan.clearance_sla_minutes)} min</span>
-            <span className="metric-pill">Repeat {oneDecimal(selectedPlan.repeat_pressure_score_0_100)}</span>
-            <span className="metric-pill">Patrol gap {oneDecimal(selectedPlan.patrol_gap_score_0_100)}</span>
-            {selectedPlan.hotspot_persistence_class && <span className="metric-pill">{selectedPlan.hotspot_persistence_class}</span>}
-            {selectedPlan.hidden_hotspot_flag && <span className="metric-pill">{selectedPlan.hidden_hotspot_flag}</span>}
-            {selectedPlan.time_window_reliability_band && <span className="metric-pill">{selectedPlan.time_window_reliability_band}</span>}
-            {elrm && <span className="metric-pill">Recovery {elrm}</span>}
-            {selectedPlan.carriageway_recovery_class && (
-              <span className="metric-pill">{selectedPlan.carriageway_recovery_class}</span>
-            )}
-            {roadspace?.bottleneck_class && <span className="metric-pill">{roadspace.bottleneck_class}</span>}
-          </div>
-          <div className="operator-metrics-grid">
+          <p className="brief-location">{selectedPlan.police_station} · {selectedPlan.best_time_window}</p>
+
+          <div className="officer-action-banner">
             <div>
-              <span>Capacity pressure</span>
-              <strong>{oneDecimal(selectedPlan.capacity_loss_pressure_0_100)}</strong>
-              <small>{compactNumber(selectedPlan.estimated_capacity_loss_minutes)} lane-min at risk</small>
+              <span>Recommended action</span>
+              <strong>{officerActionText(selectedPlan.recommended_action)}</strong>
             </div>
             <div>
-              <span>Operational priority</span>
-              <strong>{oneDecimal(selectedPlan.operational_priority_score_0_100)}</strong>
-              <small>{selectedPlan.clearance_decision_band ?? 'Response band pending'}</small>
-            </div>
-            <div>
-              <span>Repeat pressure</span>
-              <strong>{oneDecimal(selectedPlan.repeat_pressure_score_0_100)}</strong>
-              <small>{selectedPlan.repeat_vehicle_movement_pattern ?? `${oneDecimal((selectedPlan.chronic_vehicle_record_share ?? 0) * 100)}% chronic records`}</small>
-            </div>
-            <div>
-              <span>Patrol gap</span>
-              <strong>{oneDecimal(selectedPlan.patrol_gap_score_0_100)}</strong>
-              <small>{selectedPlan.patrol_gap_band ?? 'coverage score pending'}</small>
-            </div>
-            <div>
-              <span>Emerging score</span>
-              <strong>{oneDecimal(selectedPlan.emerging_hotspot_score_0_100)}</strong>
-              <small>Recent/prior ratio {oneDecimal(selectedPlan.recent_to_prior_pressure_ratio)}</small>
-            </div>
-            <div>
-              <span>Reliability</span>
-              <strong>{oneDecimal(selectedPlan.time_window_reliability_score_0_100)}</strong>
-              <small>{selectedPlan.time_window_coverage_warning ?? 'Evidence usable'}</small>
+              <span>Response urgency</span>
+              <strong>{urgencyText(selectedPlan)}</strong>
             </div>
           </div>
+
+          <div className="officer-brief-grid">
+            <div>
+              <span>Where</span>
+              <strong>{selectedPlan.zone_name}</strong>
+              <small>Centroid {oneDecimal(selectedPlan.centroid_lat)}, {oneDecimal(selectedPlan.centroid_lon)}</small>
+            </div>
+            <div>
+              <span>When</span>
+              <strong>{selectedPlan.best_time_window}</strong>
+              <small>{selectedPlan.time_window_reliability_band ?? 'Usable time-window evidence'}</small>
+            </div>
+            <div>
+              <span>Resource</span>
+              <strong>{resourceText(selectedPlan)}</strong>
+              <small>{selectedPlan.clearance_decision_band ?? 'Use shift judgement'}</small>
+            </div>
+            <div>
+              <span>Why this matters</span>
+              <strong>{plainWhy(selectedPlan, roadspace)}</strong>
+              <small>{selectedPlan.reasoning}</small>
+            </div>
+          </div>
+
           {roadspace?.corridor_name && (
             <p className="corridor-note">
               Part of <strong>{roadspace.corridor_name}</strong>
@@ -1318,7 +1338,29 @@ function HotspotIntelligence({
               {roadspace.corridor_length_km ? `, ~${oneDecimal(roadspace.corridor_length_km)} km inferred corridor` : ''}.
             </p>
           )}
-          <p className="reason-large">{selectedPlan.reasoning}</p>
+
+          <div className="plain-evidence-grid">
+            <div>
+              <span>Road pressure</span>
+              <strong>{oneDecimal(selectedPlan.capacity_loss_pressure_0_100)}/100</strong>
+              <small>Likely road-space blockage before clearance.</small>
+            </div>
+            <div>
+              <span>Repeat pattern</span>
+              <strong>{oneDecimal(selectedPlan.repeat_pressure_score_0_100)}/100</strong>
+              <small>{selectedPlan.repeat_vehicle_movement_pattern ?? 'Repeat-vehicle pressure check.'}</small>
+            </div>
+            <div>
+              <span>Coverage gap</span>
+              <strong>{oneDecimal(selectedPlan.patrol_gap_score_0_100)}/100</strong>
+              <small>{selectedPlan.patrol_gap_band ?? 'Compares risk with past patrol coverage.'}</small>
+            </div>
+            <div>
+              <span>Evidence quality</span>
+              <strong>{selectedPlan.confidence_band}</strong>
+              <small>{selectedPlan.time_window_coverage_warning ?? 'Enough evidence for a field decision.'}</small>
+            </div>
+          </div>
         </div>
         <TopPriorityPanel rows={data.enforcementPlan.slice(0, 8)} onSelect={onSelect} />
       </div>

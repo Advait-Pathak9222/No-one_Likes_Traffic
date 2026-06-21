@@ -18,6 +18,33 @@ function recoveryRange(plan: EnforcementPlanRow): string {
   return `${oneDecimal(expected)} min`;
 }
 
+function officerActionText(action: string): string {
+  const lower = action.toLowerCase();
+  if (lower.includes('tow')) return 'Send tow support and clear parked vehicles';
+  if (lower.includes('engineering')) return 'Send patrol and flag for engineering fix';
+  if (lower.includes('fixed')) return 'Place a fixed-window enforcement unit';
+  if (lower.includes('metro') || lower.includes('market')) return 'Control pickup/drop and spillover parking';
+  if (lower.includes('watch')) return 'Keep on watchlist and audit if pressure rises';
+  return 'Send targeted patrol';
+}
+
+function resourceText(plan: EnforcementPlanRow): string {
+  const patrol = plan.estimated_patrol_hours ?? 0;
+  const tow = plan.estimated_tow_hours ?? 0;
+  if (tow > 0 && patrol > 0) return `Tow + patrol support (${oneDecimal(patrol)} patrol hr, ${oneDecimal(tow)} tow hr)`;
+  if (tow > 0) return `Tow support (${oneDecimal(tow)} tow hr)`;
+  if (patrol > 0) return `Patrol support (${oneDecimal(patrol)} patrol hr)`;
+  return 'Officer audit / watchlist';
+}
+
+function urgencyText(plan: EnforcementPlanRow): string {
+  const sla = plan.clearance_sla_minutes;
+  if (sla === undefined || sla === null) return plan.clearance_decision_band ?? 'Act in target window';
+  if (sla <= 30) return `Immediate: within ${compactNumber(sla)} min`;
+  if (sla <= 90) return `Same shift: within ${compactNumber(sla)} min`;
+  return `Planned: within ${compactNumber(sla)} min`;
+}
+
 export function ZoneBrief({ plan, roadspace }: ZoneBriefProps) {
   return (
     <article className="zone-brief" id="print-root">
@@ -33,35 +60,19 @@ export function ZoneBrief({ plan, roadspace }: ZoneBriefProps) {
       </header>
 
       <div className="brief-chips">
-        <span className="brief-chip action">{plan.recommended_action}</span>
+        <span className="brief-chip action">{officerActionText(plan.recommended_action)}</span>
         <span className="brief-chip">{plan.confidence_band} confidence</span>
-        <span className="brief-chip">Repeat pressure {oneDecimal(plan.repeat_pressure_score_0_100)}</span>
-        <span className="brief-chip">Patrol gap {oneDecimal(plan.patrol_gap_score_0_100)}</span>
         {plan.hotspot_persistence_class && <span className="brief-chip">{plan.hotspot_persistence_class}</span>}
-        {plan.hidden_hotspot_flag && <span className="brief-chip">{plan.hidden_hotspot_flag}</span>}
-        {plan.time_window_reliability_band && <span className="brief-chip">{plan.time_window_reliability_band}</span>}
-        {plan.station_load_band && <span className="brief-chip">{plan.station_load_band}</span>}
-        {plan.carriageway_recovery_class && <span className="brief-chip">{plan.carriageway_recovery_class}</span>}
         {roadspace?.bottleneck_class && <span className="brief-chip">{roadspace.bottleneck_class}</span>}
       </div>
 
-      <div className="brief-metrics">
-        <div><span>Queue spillback risk</span><strong>{oneDecimal(plan.queue_spillback_risk_0_100)}</strong></div>
-        <div><span>Clearance SLA</span><strong>{compactNumber(plan.clearance_sla_minutes)} min</strong></div>
-        <div><span>Capacity pressure</span><strong>{oneDecimal(plan.capacity_loss_pressure_0_100)}</strong></div>
-        <div><span>Lane-min at risk</span><strong>{compactNumber(plan.estimated_capacity_loss_minutes)}</strong></div>
-        <div><span>Equivalent lane recovery</span><strong>{recoveryRange(plan)}</strong></div>
-        <div><span>Repeat pressure</span><strong>{oneDecimal(plan.repeat_pressure_score_0_100)}</strong></div>
-        <div><span>Patrol gap</span><strong>{oneDecimal(plan.patrol_gap_score_0_100)}</strong></div>
-        <div><span>Emerging score</span><strong>{oneDecimal(plan.emerging_hotspot_score_0_100)}</strong></div>
-        <div><span>Hidden score</span><strong>{oneDecimal(plan.hidden_hotspot_score_0_100)}</strong></div>
-        <div><span>Time-window reliability</span><strong>{oneDecimal(plan.time_window_reliability_score_0_100)}</strong></div>
-        <div><span>Text severity</span><strong>{oneDecimal(plan.violation_text_severity_score_0_100)}</strong></div>
-        <div><span>Recovery / resource-hr</span><strong>{oneDecimal(plan.recovery_minutes_per_resource_hour)}</strong></div>
-        <div><span>Evidence quality</span><strong>{oneDecimal(plan.evidence_quality_score_0_100)}</strong></div>
-        <div><span>Operational priority</span><strong>{oneDecimal(plan.operational_priority_score_0_100)}</strong></div>
-        <div><span>Patrol / tow hours</span><strong>{oneDecimal(plan.estimated_patrol_hours)} / {oneDecimal(plan.estimated_tow_hours)}</strong></div>
-        <div><span>Recorded violations</span><strong>{compactNumber(plan.expected_violations)}</strong></div>
+      <div className="brief-metrics officer">
+        <div><span>Action</span><strong>{officerActionText(plan.recommended_action)}</strong></div>
+        <div><span>When</span><strong>{plan.best_time_window}</strong></div>
+        <div><span>Urgency</span><strong>{urgencyText(plan)}</strong></div>
+        <div><span>Resource needed</span><strong>{resourceText(plan)}</strong></div>
+        <div><span>Main reason</span><strong>{roadspace?.dominant_lane_issue ?? plan.reasoning}</strong></div>
+        <div><span>Expected benefit</span><strong>{recoveryRange(plan)}</strong></div>
       </div>
 
       {roadspace && (
@@ -80,9 +91,7 @@ export function ZoneBrief({ plan, roadspace }: ZoneBriefProps) {
           {plan.violation_text_severity_signature && (
             <p><strong>Violation severity signature:</strong> {plan.violation_text_severity_signature}</p>
           )}
-          {plan.time_window_coverage_warning && (
-            <p><strong>Reliability note:</strong> {plan.time_window_coverage_warning}</p>
-          )}
+          <p><strong>Confidence note:</strong> {plan.time_window_coverage_warning ?? `${plan.confidence_band} confidence field brief.`}</p>
         </section>
       )}
 

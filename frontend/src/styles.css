@@ -790,9 +790,109 @@ tr:hover {
   margin: 16px 0;
 }
 
+.chip-row.compact {
+  margin: 0;
+}
+
 .metric-pill {
   color: var(--blue);
   background: var(--soft-blue);
+}
+
+.officer-brief-card {
+  border-left: 7px solid var(--orange);
+}
+
+.brief-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.brief-topline > span,
+.officer-brief-grid span,
+.plain-evidence-grid span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.brief-location {
+  margin-top: 0;
+}
+
+.officer-action-banner {
+  margin: 18px 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
+  gap: 12px;
+}
+
+.officer-action-banner > div {
+  border-radius: 18px;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, #fff0e5, #ffffff);
+  border: 1px solid rgba(251, 100, 27, 0.28);
+}
+
+.officer-action-banner strong,
+.officer-brief-grid strong,
+.plain-evidence-grid strong {
+  display: block;
+  color: var(--ink);
+}
+
+.officer-action-banner strong {
+  margin-top: 5px;
+  font-size: 22px;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+}
+
+.officer-brief-grid,
+.plain-evidence-grid {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.officer-brief-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.plain-evidence-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.officer-brief-grid > div,
+.plain-evidence-grid > div {
+  padding: 14px;
+  border-radius: 16px;
+  background: #f8fbff;
+  border: 1px solid #dfe7f4;
+}
+
+.officer-brief-grid strong {
+  margin-top: 5px;
+  font-size: 17px;
+  line-height: 1.25;
+}
+
+.plain-evidence-grid strong {
+  margin-top: 5px;
+  font-size: 20px;
+  letter-spacing: -0.03em;
+}
+
+.officer-brief-grid small,
+.plain-evidence-grid small {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  line-height: 1.35;
 }
 
 .reason-large {
@@ -1993,6 +2093,10 @@ tr:hover {
   gap: 12px;
 }
 
+.brief-metrics.officer {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .brief-metrics > div {
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -2014,6 +2118,7 @@ tr:hover {
   margin-top: 5px;
   font-size: 18px;
   letter-spacing: -0.02em;
+  line-height: 1.25;
 }
 
 .brief-section h3 {
