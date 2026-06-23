@@ -334,6 +334,8 @@ function CommandCenter({
   const firstRows = data.enforcementPlan.slice(0, 10);
   const towCount = firstRows.filter((row) => row.recommended_action.toLowerCase().includes('tow')).length;
   const highConfidenceCount = firstRows.filter((row) => row.confidence_band === 'High').length;
+  const firstWaveStations = new Set(firstRows.map((row) => row.police_station)).size;
+  const firstWaveRecovery = firstRows.reduce((sum, row) => sum + (row.estimated_lane_recovery_minutes ?? 0), 0);
 
   return (
     <section className="page-grid">
@@ -356,19 +358,47 @@ function CommandCenter({
               },
               {
                 label: 'Why now',
-                title: plainWhy(selectedPlan),
-                body: `${urgencyText(selectedPlan)} · ${selectedPlan.confidence_band} confidence`
+                title: reasonPoints(selectedPlan.reasoning, 1)[0] || plainWhy(selectedPlan),
+                body: `${reasonPoints(selectedPlan.reasoning, 2)[1] ?? urgencyText(selectedPlan)} · ${selectedPlan.confidence_band} confidence`
               }
             ]}
             compact
           />
           <button type="button" onClick={() => onSelect(selectedPlan.zone_id)}>Open field brief</button>
         </article>
-        <div className="simple-status-cards">
-          <SummaryItem label="First-wave zones" value={compactNumber(firstRows.length)} />
-          <SummaryItem label="Need tow support" value={compactNumber(towCount)} />
-          <SummaryItem label="High confidence" value={compactNumber(highConfidenceCount)} />
-        </div>
+        <aside className="command-snapshot">
+          <div className="snapshot-heading">
+            <span>First wave at a glance</span>
+            <strong>{selectedPlan.best_time_window}</strong>
+          </div>
+          <div className="snapshot-grid">
+            <div>
+              <span>Zones</span>
+              <strong>{compactNumber(firstRows.length)}</strong>
+              <small>ranked for first action</small>
+            </div>
+            <div>
+              <span>Tow</span>
+              <strong>{compactNumber(towCount)}</strong>
+              <small>need tow support</small>
+            </div>
+            <div>
+              <span>Confidence</span>
+              <strong>{compactNumber(highConfidenceCount)}</strong>
+              <small>high-confidence rows</small>
+            </div>
+            <div>
+              <span>Stations</span>
+              <strong>{compactNumber(firstWaveStations)}</strong>
+              <small>covered in first wave</small>
+            </div>
+          </div>
+          <div className="snapshot-callout">
+            <span>Recovery estimate</span>
+            <strong>{compactNumber(firstWaveRecovery)} min</strong>
+            <small>decision-support lane-time estimate for the first wave</small>
+          </div>
+        </aside>
       </div>
 
       <div className="command-layout">
@@ -748,12 +778,17 @@ function LiveOpsBrief({ data, onSelect }: { data: ParkPulseData; onSelect: (zone
       .sort((a, b) => b.score - a.score)
       .slice(0, 6);
   }, [filtered]);
+  const shiftPatrolHours = criticalRows.reduce((sum, row) => sum + (row.estimated_patrol_hours ?? 0), 0);
+  const shiftTowHours = criticalRows.reduce((sum, row) => sum + (row.estimated_tow_hours ?? 0), 0);
+  const recoveryMinutes = criticalRows.reduce((sum, row) => sum + (row.estimated_lane_recovery_minutes ?? 0), 0);
+  const towRows = criticalRows.filter((row) => row.recommended_action.toLowerCase().includes('tow')).length;
+  const highConfidenceRows = criticalRows.filter((row) => row.confidence_band === 'High').length;
 
   return (
     <section className="stack">
       <PageTitle
         title="Live Ops Brief"
-        subtitle="A simple shift brief: first action, station wave, and field runbook."
+        subtitle="A shift-control board for the duty officer: radio line, first wave, and what to record after action."
       />
       <div className="filter-bar ops-filter">
         <select value={timeWindow} onChange={(event) => setTimeWindow(event.target.value)}>
@@ -765,47 +800,55 @@ function LiveOpsBrief({ data, onSelect }: { data: ParkPulseData; onSelect: (zone
       </div>
 
       <div className="ops-layout">
-        <article className="radio-card">
-          <span className="ops-label">Radio brief</span>
-          <h2>{firstRow ? `Send first unit to ${firstRow.zone_name}` : 'No active hotspot selected'}</h2>
+        <article className="radio-card ops-radio-card">
+          <div className="radio-header-line">
+            <span className="ops-label">Radio message</span>
+            {firstRow && <ConfidenceBadge band={firstRow.confidence_band} />}
+          </div>
+          <h2>{firstRow ? `Unit 1: ${officerActionText(firstRow.recommended_action)}` : 'No active hotspot selected'}</h2>
           {firstRow && (
             <>
               <NumberedActionGrid
                 steps={[
                   {
-                    label: 'Station',
-                    title: firstRow.police_station,
-                    body: `${firstRow.best_time_window} · ${urgencyText(firstRow)}`
+                    label: 'Location',
+                    title: firstRow.zone_name,
+                    body: `${firstRow.police_station} · ${firstRow.best_time_window}`
                   },
                   {
-                    label: 'Instruction',
-                    title: officerActionText(firstRow.recommended_action),
-                    body: resourceText(firstRow)
+                    label: 'Resource',
+                    title: resourceText(firstRow),
+                    body: urgencyText(firstRow)
                   },
                   {
-                    label: 'Reason',
-                    title: plainWhy(firstRow),
-                    body: `${firstRow.confidence_band} confidence`
+                    label: 'Proof',
+                    title: reasonPoints(firstRow.reasoning, 1)[0] || plainWhy(firstRow),
+                    body: 'Open the field brief before dispatch for the exact map point.'
                   }
                 ]}
                 compact
               />
-              <button type="button" onClick={() => onSelect(firstRow.zone_id)}>Open hotspot intelligence</button>
+              <div className="radio-actions">
+                <button type="button" onClick={() => onSelect(firstRow.zone_id)}>Open full field brief</button>
+                <span>Use this line for the first wireless instruction.</span>
+              </div>
             </>
           )}
         </article>
-        <div className="simple-status-cards vertical">
-          <SummaryItem label="Actions in this view" value={compactNumber(criticalRows.length)} />
-          <SummaryItem label="First station" value={firstRow?.police_station ?? '—'} />
-          <SummaryItem label="First time window" value={firstRow?.best_time_window ?? '—'} />
+        <div className="ops-summary-board">
+          <SummaryItem label="First-wave actions" value={compactNumber(criticalRows.length)} />
+          <SummaryItem label="Tow-needed zones" value={compactNumber(towRows)} />
+          <SummaryItem label="High-confidence actions" value={compactNumber(highConfidenceRows)} />
+          <SummaryItem label="Patrol / tow hours" value={`${oneDecimal(shiftPatrolHours)} / ${oneDecimal(shiftTowHours)}`} />
+          <SummaryItem label="Recovery estimate" value={`${compactNumber(recoveryMinutes)} min`} />
         </div>
       </div>
 
       <div className="ops-grid">
         <article className="ops-card">
           <div className="card-heading">
-            <h2>Dispatch Wave</h2>
-            <p>Station-wise sequence for the next enforcement window.</p>
+            <h2>1. Station Dispatch Wave</h2>
+            <p>Start with the station that has the strongest combined priority in the selected window.</p>
           </div>
           <div className="wave-list">
             {stationWaves.map((wave, index) => (
@@ -828,8 +871,8 @@ function LiveOpsBrief({ data, onSelect }: { data: ParkPulseData; onSelect: (zone
 
         <article className="ops-card runbook-card">
           <div className="card-heading">
-            <h2>Five-Minute Runbook</h2>
-            <p>Designed for a duty officer who has no time to inspect tables.</p>
+            <h2>2. Five-Minute Runbook</h2>
+            <p>Keep the shift process simple: dispatch, clear obstruction, record the result.</p>
           </div>
           <ol className="runbook">
             <li>Open the first hotspot brief and confirm the exact location on the map.</li>
@@ -837,6 +880,25 @@ function LiveOpsBrief({ data, onSelect }: { data: ParkPulseData; onSelect: (zone
             <li>Clear the obstruction first; routine challans come after road space is restored.</li>
             <li>At shift end, record cleared, unchanged, or shifted nearby so the next brief improves.</li>
           </ol>
+        </article>
+
+        <article className="ops-card field-message-card">
+          <div className="card-heading">
+            <h2>3. Field Messages</h2>
+            <p>Short, non-technical instructions that can be read out or sent to field teams.</p>
+          </div>
+          <div className="field-message-list">
+            {criticalRows.slice(0, 4).map((row, index) => (
+              <button key={row.zone_id} type="button" onClick={() => onSelect(row.zone_id)}>
+                <span>{index + 1}</span>
+                <div>
+                  <strong>{row.zone_name}</strong>
+                  <small>{officerActionText(row.recommended_action)} · {row.best_time_window}</small>
+                  <em>{reasonPoints(row.reasoning, 2).join(' · ') || plainWhy(row)}</em>
+                </div>
+              </button>
+            ))}
+          </div>
         </article>
       </div>
     </section>
@@ -1168,36 +1230,21 @@ function OperationalIntelligenceReport({
     <section className="stack">
       <PageTitle
         title="Intelligence Report"
-        subtitle="The same eight signals from the pitch, translated into simple field questions and actions."
+        subtitle="A clean audit view: what evidence supports the priority queue, and how should it be interpreted?"
       />
-      <article className="intel-hero simple-intel-hero">
-        <div>
-          <span className="ops-label">Model explanation layer</span>
-          <h2>Use this page to audit why a hotspot was prioritised.</h2>
-          <NumberedActionGrid
-            steps={[
-              {
-                label: 'Purpose',
-                title: 'For commanders, reviewers and judges',
-                body: 'Daily field dispatch should start from Command Center or Live Ops Brief.'
-              },
-              {
-                label: 'How to read',
-                title: 'Each signal answers one plain question',
-                body: 'What is rising, repeating, under-covered, severe or reliable?'
-              },
-              {
-                label: 'Decision rule',
-                title: 'High scores mean act or verify first',
-                body: 'Low scores usually mean watch, audit or wait for stronger evidence.'
-              }
-            ]}
-            compact
-          />
+      <article className="intel-summary-panel">
+        <div className="intel-summary-copy">
+          <span className="section-kicker">Model explanation layer</span>
+          <h2>Use this page after dispatch planning, not during field action.</h2>
+          <p>
+            The Command Center tells officers what to do. This page explains why the system ranked those places:
+            recurrence, repeat vehicles, recording visibility, time-window reliability and evidence quality.
+          </p>
         </div>
-        <div className="intel-hero-stats">
-          <div><strong>{compactNumber(rows.length)}</strong><span>filtered priority rows</span></div>
-          <div><strong>{compactNumber(recurringCount)}</strong><span>recurring/rising</span></div>
+        <div className="intel-stat-strip">
+          <div><strong>{compactNumber(rows.length)}</strong><span>priority rows</span></div>
+          <div><strong>{compactNumber(recurringCount)}</strong><span>recurring / rising</span></div>
+          <div><strong>{compactNumber(repeatHeavyCount)}</strong><span>repeat-heavy</span></div>
           <div><strong>{compactNumber(highConfidenceCount)}</strong><span>high confidence</span></div>
         </div>
       </article>
@@ -1219,22 +1266,22 @@ function OperationalIntelligenceReport({
         <EmptyState title="No report rows" body="Relax the station, time-window or priority filter." />
       ) : (
         <>
-          <div className="intel-guide">
+          <div className="intel-guide compact-guide">
             <div>
-              <strong>Metric name</strong>
-              <span>Same terminology as the pitch deck.</span>
+              <strong>1. What is happening?</strong>
+              <span>Rising, recurring, repeated or severe parking pressure.</span>
             </div>
             <div>
-              <strong>Plain question</strong>
-              <span>The field interpretation in one line.</span>
+              <strong>2. Can we trust it?</strong>
+              <span>Checks evidence quality, time-window reliability and recording visibility.</span>
             </div>
             <div>
-              <strong>Officer use</strong>
-              <span>How this changes patrol, tow or audit action.</span>
+              <strong>3. What changes operationally?</strong>
+              <span>Decides patrol, tow, fixed-window enforcement or audit.</span>
             </div>
             <div>
-              <strong>Examples</strong>
-              <span>Click any example to open the full field brief.</span>
+              <strong>4. Where is the proof?</strong>
+              <span>Open examples to inspect the exact field brief.</span>
             </div>
           </div>
 
@@ -1248,8 +1295,8 @@ function OperationalIntelligenceReport({
             ))}
           </div>
 
-          <details className="technical-details">
-            <summary>Show detailed signal explanations</summary>
+          <details className="technical-details" open>
+            <summary>Eight explainability signals</summary>
             <div className="intelligence-grid readable-intel-grid">
               {metrics.map((metric) => (
                 <IntelligenceMetricCard key={metric.title} metric={metric} onSelect={onSelect} />

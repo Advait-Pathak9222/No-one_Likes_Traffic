@@ -437,6 +437,12 @@ function lvhMeUrl(): string {
   return `${protocol}//lvh.me${port ? `:${port}` : ''}${pathname}${search}${hash}`;
 }
 
+function forceOfflineBasemap(): boolean {
+  if (typeof window === 'undefined') return false;
+  const params = new URLSearchParams(window.location.search);
+  return ['offline', 'osm', 'fallback'].includes((params.get('basemap') ?? '').toLowerCase());
+}
+
 export function RiskMap(props: RiskMapProps) {
   const {
     segments,
@@ -469,6 +475,15 @@ export function RiskMap(props: RiskMapProps) {
   useEffect(() => {
     let cancelled = false;
     const host = typeof window !== 'undefined' ? window.location.hostname : 'unknown';
+    if (forceOfflineBasemap()) {
+      console.info(`${MAP_LOG} Offline/fallback basemap forced by ?basemap=offline; skipping MapMyIndia SDK load.`);
+      setBasemapStatus('osm');
+      return () => {
+        cancelled = true;
+        providerMapRef.current?.remove?.();
+        providerMapRef.current = null;
+      };
+    }
     console.info(
       `${MAP_LOG} RiskMap mounting. key=${maskKey(MAPMYINDIA_MAP_KEY)} host="${host}" container="#${sdkContainerIdRef.current}".`
     );
