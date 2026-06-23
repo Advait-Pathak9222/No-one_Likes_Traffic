@@ -229,28 +229,28 @@ Dashboard pages:
 - Deployment Simulator
 - Methodology
 
-### Netlify Demo Deployment
+### Vercel Deployment
 
-This repo includes `netlify.toml`, so Netlify can build directly from GitHub.
-
-Use these Netlify settings:
+The dashboard deploys as a static build from `frontend/` (config in
+`frontend/vercel.json`). After importing the GitHub repo into Vercel, set:
 
 | Setting | Value |
 |---|---|
-| Base directory | repository root |
-| Build command | `cd frontend && npm ci && npm run build` |
-| Publish directory | `frontend/dist` |
-| Node version | `18` |
+| Root Directory | `frontend` |
+| Framework Preset | Other |
+| Build Command | `npm run build` |
+| Output Directory | `dist` |
 
-After Netlify creates the site, add the generated domain to the MapMyIndia /
+Setting **Root Directory = `frontend`** is what stops Vercel from treating the
+repository root as a Python app. `frontend/vercel.json` supplies the build
+command, output directory, SPA rewrite and cache headers.
+
+After Vercel creates the site, add the generated domain to the MapMyIndia /
 Mappls web key allowlist, for example:
 
 ```text
-your-site-name.netlify.app
+your-project.vercel.app
 ```
-
-For a quick drag-and-drop deploy, run `npm run build` inside `frontend` and
-upload the generated `frontend/dist` folder to Netlify Drop.
 
 ### Maps and WebGL fallback
 
